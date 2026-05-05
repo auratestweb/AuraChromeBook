@@ -1102,14 +1102,14 @@ const PS_GAMES = {
     'infinitecraft-window': { id: 'infinitecraft-window', name: 'Infinite Craft', icon: '⚗️', category: 'simulation', rating: 4.6, banner: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800', desc: 'Combine elements to create new items.', controls: 'Drag and drop to combine' },
     'paperio-window': { id: 'paperio-window', name: 'Paper.io', icon: '📄', category: 'arcade', rating: 4.5, banner: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800', desc: 'Capture territory in this addictive strategy game.', controls: 'Arrow keys to move' },
     'parkingfury-window': { id: 'parkingfury-window', name: 'Parking Fury', icon: '🅿️', category: 'racing', rating: 4.4, banner: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=800', desc: 'Master the art of parking under pressure.', controls: 'Arrow keys to drive' },
-    'granny3-window': { id: 'granny3-window', name: 'Granny 3', icon: '👵', category: 'horror', rating: 4.5, banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800', desc: 'Escape from Granny's haunted house.', controls: 'WASD to move, E to interact' },
+    'granny3-window': { id: 'granny3-window', name: 'Granny 3', icon: '👵', category: 'horror', rating: 4.5, banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800', desc: 'Escape from Granny\'s haunted house.', controls: 'WASD to move, E to interact' },
     'granny2-window': { id: 'granny2-window', name: 'Granny 2', icon: '👵', category: 'horror', rating: 4.6, banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800', desc: 'The sequel horror escape game.', controls: 'WASD to move, E to interact' },
     'fridaynightfunk-window': { id: 'fridaynightfunk-window', name: 'Friday Night Funkin', icon: '🎤', category: 'arcade', rating: 4.8, banner: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800', desc: 'Rhythm battle game with catchy beats.', controls: 'Arrow keys to match beats' },
     'geometrydash-window': { id: 'geometrydash-window', name: 'Geometry Dash', icon: '📐', category: 'arcade', rating: 4.9, banner: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800', desc: 'Jump and fly through dangerous passages.', controls: 'Space/Click to jump' },
     'smashcarts-window': { id: 'smashcarts-window', name: 'Smash Karts', icon: '🏎️', category: 'racing', rating: 4.8, banner: 'https://images.unsplash.com/photo-1511994714008-b6d68a8b32a2?q=80&w=800', desc: 'Kart racing battle royale with weapons.', controls: 'WASD to drive, Space to shoot' },
     'fnae-window': { id: 'fnae-window', name: 'Five Nights', icon: '🐻', category: 'horror', rating: 4.5, banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800', desc: 'Survive the night shift at the pizzeria.', controls: 'Mouse to interact' },
     'eaglercraft-window': { id: 'eaglercraft-window', name: 'Eaglercraft', icon: '⛏️', category: 'simulation', rating: 4.8, banner: 'https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?q=80&w=800', desc: 'Minecraft-style sandbox building game.', controls: 'WASD to move, Mouse to look' },
-    'granny-window': { id: 'granny-window', name: 'Granny', icon: '👵', category: 'horror', rating: 4.3, banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800', desc: 'Escape from Granny's house in 5 days.', controls: 'WASD to move, E to interact' },
+    'granny-window': { id: 'granny-window', name: 'Granny', icon: '👵', category: 'horror', rating: 4.3, banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800', desc: 'Escape from Granny\'s house in 5 days.', controls: 'WASD to move, E to interact' },
     'escaperoad-window': { id: 'escaperoad-window', name: 'Escape Road', icon: '🚗', category: 'racing', rating: 4.6, banner: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=800', desc: 'High-speed escape driving game.', controls: 'Arrow keys to drive' },
     'escaperoad2-window': { id: 'escaperoad2-window', name: 'Escape Road 2', icon: '🏎️', category: 'racing', rating: 4.7, banner: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=800', desc: 'Sequel with more vehicles and maps.', controls: 'Arrow keys to drive' },
     'solarsmash-window': { id: 'solarsmash-window', name: 'Solar Smash', icon: '🪐', category: 'simulation', rating: 4.4, banner: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=800', desc: 'Destroy planets with various weapons.', controls: 'Click to select weapons' },
@@ -2624,22 +2624,23 @@ function lockSystem() {
     if (contextMenu) contextMenu.style.display = 'none';
 }
 
-function unlockOS() {
-    const input = document.getElementById('lock-password').value;
-    const lockError = document.getElementById('lock-error');
-    const lockScreen = document.getElementById('lock-screen');
-
-    if (input === localStorage.getItem('os_password') || input === localStorage.getItem('os_answer')) {
-        if (lockScreen) lockScreen.style.display = 'none';
-        document.getElementById('lock-password').value = '';
-        if (lockError) lockError.style.display = 'none';
-        // Show update modal immediately after unlocking
-        showUpdateModal();
-        triggerInitialNotifications(); 
-    } else {
-        if (lockError) lockError.style.display = 'block';
-    }
-}
+// Original unlockOS - disabled, account-aware version used above
+// function unlockOS() {
+//     const input = document.getElementById('lock-password').value;
+//     const lockError = document.getElementById('lock-error');
+//     const lockScreen = document.getElementById('lock-screen');
+// 
+//     if (input === localStorage.getItem('os_password') || input === localStorage.getItem('os_answer')) {
+//         if (lockScreen) lockScreen.style.display = 'none';
+//         document.getElementById('lock-password').value = '';
+//         if (lockError) lockError.style.display = 'none';
+//         // Show update modal immediately after unlocking
+//         showUpdateModal();
+//         triggerInitialNotifications(); 
+//     } else {
+//         if (lockError) lockError.style.display = 'block';
+// }
+// }
 
 function showSecurityQuestion() {
     const hintDiv = document.getElementById('security-hint');
