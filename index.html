@@ -9,6 +9,7 @@
     <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body data-theme="dark">
     <div id="boot-screen">
@@ -448,7 +449,7 @@
         <div class="window" id="store-window" style="display: none; width: 900px; height: 650px;">
             <div class="window-header" id="store-window-header"><span class="window-title">🛍️ Play Store</span><div><button class="win-btn" onclick="minimizeApp('store-window')">−</button><button class="win-btn" onclick="maximizeApp('store-window')">□</button><button class="win-btn close-btn" onclick="closeApp('store-window')">✕</button></div></div>
             <div class="window-content store-bg" style="padding: 0; display: flex; flex-direction: column;">
-                <div id="new-play-store" style="display: flex; height: 100%; background: #1a1a2e; color: #e8eaed; font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif;">
+                <div id="new-play-store" style="display: flex; height: 100%; background: #1a1a2e; color: #e8eaed; font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif; position: relative;">
 
                     <!-- Left Sidebar -->
                     <div id="ps-sidebar" style="width: 200px; background: #16213e; display: flex; flex-direction: column; padding: 15px 0; border-right: 1px solid rgba(255,255,255,0.05);">
@@ -469,6 +470,7 @@
                             <button class="ps-nav-btn active" onclick="showPlayStoreTab('home')" data-tab="home">Home</button>
                             <button class="ps-nav-btn" onclick="showPlayStoreTab('library')" data-tab="library">Library</button>
                             <button class="ps-nav-btn" onclick="showPlayStoreTab('store')" data-tab="store">Store</button>
+                            <button class="ps-nav-btn" onclick="showPlayStoreTab('favorites')" data-tab="favorites">⭐ Favorites</button>
                             <button class="ps-nav-btn" onclick="showPlayStoreTab('settings')" data-tab="settings">Settings</button>
                         </div>
 
@@ -505,23 +507,33 @@
                             <div id="ps-tab-store" class="ps-tab" style="display: none;">
                                 <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">Browse Store</h3>
                                 <div style="margin-bottom: 20px;">
-                                    <input type="text" id="ps-store-search" placeholder="Search games..." onkeyup="filterPlayStoreGames()" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #e8eaed; font-size: 14px; outline: none; box-sizing: border-box;">
+                                    <input type="text" id="ps-store-search" placeholder="Search games & apps..." onkeyup="filterPlayStoreGames()" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #e8eaed; font-size: 14px; outline: none; box-sizing: border-box;">
                                 </div>
                                 <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                                    <span class="ps-category active" onclick="filterStoreCategory('all')">All</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('action')">Action</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('arcade')">Arcade</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('racing')">Racing</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('sports')">Sports</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('horror')">Horror</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('rpg')">RPG</span>
-                                    <span class="ps-category" onclick="filterStoreCategory('simulation')">Simulation</span>
-                                </div>
+                                    <span class="ps-category active" data-cat="all" onclick="filterStoreCategory('all')">All</span>
+                                    <span class="ps-category" data-cat="action" onclick="filterStoreCategory('action')">Action</span>
+                                    <span class="ps-category" data-cat="arcade" onclick="filterStoreCategory('arcade')">Arcade</span>
+                                    <span class="ps-category" data-cat="racing" onclick="filterStoreCategory('racing')">Racing</span>
+                                    <span class="ps-category" data-cat="sports" onclick="filterStoreCategory('sports')">Sports</span>
+                                    <span class="ps-category" data-cat="horror" onclick="filterStoreCategory('horror')">Horror</span>
+                                    <span class="ps-category" data-cat="rpg" onclick="filterStoreCategory('rpg')">RPG</span>
+                                    <span class="ps-category" data-cat="simulation" onclick="filterStoreCategory('simulation')">Simulation</span>
+                                    <span class="ps-category" data-cat="apps" onclick="filterStoreCategory('apps')">Apps</span>
                                 <div id="ps-store-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px;"></div>
                             </div>
 
+                            <!-- FAVORITES TAB -->
+                            <div id="ps-tab-favorites" class="ps-tab" style="display: none;">
+                                <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">⭐ Favorites</h3>
+                                <div id="ps-favorites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px;"></div>
+                                <div id="ps-favorites-empty" style="display: none; text-align: center; padding: 60px 20px; color: #9aa0a6;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">⭐</div>
+                                    <h3 style="margin: 0 0 10px; font-weight: 500;">No Favorites Yet</h3>
+                                    <p style="margin: 0; font-size: 13px;">Click the ⭐ button on any game or app to add it here.</p>
+                                </div>
+                            </div>
+
                             <!-- SETTINGS TAB -->
-                            <div id="ps-tab-settings" class="ps-tab" style="display: none;">
                                 <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">Play Store Settings</h3>
                                 <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 15px;">
                                     <h4 style="margin: 0 0 10px; font-size: 14px; color: #9aa0a6;">Data Usage</h4>
@@ -531,7 +543,16 @@
                             </div>
 
                         </div>
+                    
+                    <!-- Detail Overlay (Game/App Modal) -->
+                    <div id="ps-detail-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #1a1a2e 0%, #0f0f23 100%); z-index: 100; transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); overflow-y: auto; padding: 30px; box-sizing: border-box;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                            <button onclick="closePlayStoreDetail()" style="background: rgba(255,255,255,0.1); border: none; color: #e8eaed; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s;">←</button>
+                            <span style="font-size: 16px; font-weight: 500; color: #e8eaed;">Back to Store</span>
+                        </div>
+                        <div id="ps-detail-content"></div>
                     </div>
+</div>
                 </div>
             </div>
         </div>
