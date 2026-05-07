@@ -458,7 +458,12 @@
                         <div style="padding: 0 15px 15px;">
                             <button onclick="showPlayStoreTab('favorites')" id="ps-fav-btn" style="background: transparent; border: none; color: #ffd700; font-size: 20px; cursor: pointer; padding: 5px; border-radius: 8px; transition: 0.2s;">⭐</button>
                         </div>
-                        <div id="ps-game-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px;"></div>
+                        <div <div id="ps-sidebar-categories" style="padding: 0 15px 10px; display: flex; gap: 8px;">
+                            <button id="ps-sidebar-games-btn" onclick="switchSidebarCategory('games')" style="flex: 1; padding: 8px 0; background: var(--ps-primary); color: white; border: none; border-radius: 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: inherit;">🎮 Games</button>
+                            <button id="ps-sidebar-apps-btn" onclick="switchSidebarCategory('apps')" style="flex: 1; padding: 8px 0; background: rgba(255,255,255,0.05); color: #9aa0a6; border: none; border-radius: 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: inherit;">📱 Apps</button>
+                        </div>
+                        <div id="ps-app-list" style="flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 2px;"></div>
+id="ps-game-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px;"></div>
                     </div>
 
                     <!-- Main Content -->
