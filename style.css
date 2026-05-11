@@ -414,7 +414,7 @@
     color: #ffdad6;
 }
 
-/* ===== EXISTING STYLES ===== */
+/* ===== ECHO OS CORE STYLES ===== */
 /* Dynamic Aura OS Theme Variables */
 :root {
     --sys-base: rgba(255, 255, 255, 0.85); 
@@ -906,7 +906,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     background: #6b0000;
 }
 
-/* --- DESK UI STYLES --- */
+/* --- ECHO OS DESK UI --- */
 #desk-indicator {
     display: flex;
     align-items: center;
@@ -1093,7 +1093,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     text-align: center;
 }
 
-/* --- CHROME OS STYLE LOCK SCREEN --- */
+/* --- ECHO OS LOCK SCREEN --- */
 #lock-screen {
     position: fixed;
     top: 0;
@@ -1273,7 +1273,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
 }
 
 
-/* --- UPDATE MODAL COUNTDOWN BUTTON --- */
+/* --- ECHO OS UPDATE MODAL --- */
 .update-countdown-btn {
     background: #3c4043;
     color: #9aa0a6;
@@ -1299,7 +1299,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     transform: scale(1.05);
 }
 
-/* --- DESK QUICK ADD BUTTON --- */
+/* --- ECHO OS DESK BUTTON --- */
 #desk-add-quick {
     background: rgba(128,128,128,0.15);
     border: none;
@@ -1323,7 +1323,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     transform: scale(1.1);
 }
 
-/* --- Media Control Button --- */
+/* --- ECHO OS MEDIA CONTROL --- */
 #media-control-btn {
     background: linear-gradient(135deg, #3a7bd5, #00d2ff);
     border: none;
@@ -1378,7 +1378,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* --- Media Control Modal --- */
+/* --- ECHO OS MEDIA MODAL --- */
 #media-control-modal {
     position: absolute;
     bottom: 70px;
@@ -1508,7 +1508,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     font-size: 11px;
     color: var(--sys-text-muted);
 }
-/* ===== NEW PLAY STORE STYLES ===== */
+/* ===== ECHO OS PLAY STORE STYLES ===== */
 #new-play-store {
     --ps-bg: #1a1a2e;
     --ps-sidebar: #16213e;
@@ -1818,7 +1818,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     animation: fadeIn 0.3s ease;
 }
 
-/* ===== V2.0 PLAY STORE STYLES ===== */
+/* ===== ECHO OS PLAY STORE V2 ===== */
 
 /* Category Tabs in Sidebar */
 .ps-cat-btn {
