@@ -1,1167 +1,770 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Echo Chat • EchoOS</title>
-<style>
-  /* ----- iMessage RESET & GLOBAL ----- */
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  body {
-    height: 100vh;
-    display: flex;
-    background: #ffffff;
-    color: #000000;
-    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'SF Pro Text', system-ui, sans-serif;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* ----- SIDEBAR ----- */
-  .sidebar {
-    width: 320px;
-    background: #f6f6f8;
-    border-right: 0.5px solid rgba(60, 60, 67, 0.15);
-    padding: 12px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    overflow-y: auto;
-    flex-shrink: 0;
-  }
-
-  .sidebar::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  .sidebar::-webkit-scrollbar-thumb {
-    background: rgba(60, 60, 67, 0.2);
-    border-radius: 10px;
-  }
-
-  .section-title {
-    color: #8e8e93;
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-top: 12px;
-    margin-bottom: 4px;
-    padding-left: 16px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .sidebar-item {
-    padding: 12px 16px;
-    background: transparent;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-size: 1rem;
-    font-weight: 400;
-    color: #1c1c1e;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: none;
-  }
-
-  .sidebar-item:hover {
-    background: #e5e5ea;
-  }
-
-  .sidebar-item.active {
-    background: #007aff;
-    color: white;
-    font-weight: 500;
-  }
-
-  #joinedRooms {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 4px;
-  }
-
-  /* ----- MAIN CHAT ----- */
-  .chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: #ffffff;
-    min-width: 0;
-    position: relative;
-  }
-
-  .chat-header {
-    padding: 14px 20px;
-    background: #f8f8fa;
-    border-bottom: 0.5px solid #c6c6c8;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #000000;
-    letter-spacing: -0.01em;
-    flex-shrink: 0;
-    backdrop-filter: blur(10px);
-    background: rgba(248, 248, 250, 0.92);
-  }
-
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 10px 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    background: #ffffff;
-    scroll-behavior: smooth;
-  }
-
-  .messages::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .messages::-webkit-scrollbar-thumb {
-    background: #c8c7cc;
-    border-radius: 10px;
-  }
-
-  .msg {
-    max-width: 70%;
-    display: flex;
-    flex-direction: column;
-    animation: fadeUp 0.18s ease;
-  }
-
-  @keyframes fadeUp {
-    0% { opacity: 0; transform: translateY(6px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-
-  .msg.own {
-    align-self: flex-end;
-  }
-
-  .msg-name {
-    font-size: 0.75rem;
-    color: #8e8e93;
-    margin-bottom: 2px;
-    margin-left: 8px;
-    margin-right: 8px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .msg.own .msg-name {
-    justify-content: flex-end;
-  }
-
-  .msg-bubble {
-    padding: 10px 14px;
-    border-radius: 20px;
-    line-height: 1.4;
-    word-break: break-word;
-    font-size: 1rem;
-    background: #e9e9ed;
-    color: #000000;
-    box-shadow: none;
-    border: none;
-    max-width: 100%;
-  }
-
-  .msg.own .msg-bubble {
-    background: #007aff;
-    color: white;
-  }
-
-  .premium-badge {
-    background: linear-gradient(135deg, #f1c40f, #d4a017);
-    color: #1c1c1e;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-    text-transform: uppercase;
-  }
-
-  .msg-name.premium-name {
-    color: #b8860b;
-    font-weight: 600;
-  }
-
-  .location-badge {
-    font-size: 0.65rem;
-    color: #6c6c70;
-    margin-left: 4px;
-    font-weight: 400;
-    background: #f0f0f5;
-    padding: 1px 6px;
-    border-radius: 8px;
-    border: 0.5px solid #e0e0e6;
-  }
-
-  .msg.own .location-badge {
-    background: rgba(255,255,255,0.18);
-    color: rgba(255,255,255,0.85);
-    border-color: rgba(255,255,255,0.25);
-  }
-
-  .msg.ai-msg {
-    align-self: flex-start;
-    max-width: 75%;
-  }
-
-  .msg.ai-msg .msg-bubble {
-    background: #f2f2f7;
-    color: #1c1c1e;
-    border-left: 3px solid #af52de;
-  }
-
-  .msg.ai-msg .msg-name {
-    color: #af52de;
-  }
-
-  .ai-badge {
-    background: #af52de20;
-    color: #af52de;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.65rem;
-    font-weight: 600;
-  }
-
-  .ai-typing .msg-bubble {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 12px 16px;
-    background: #e9e9ed;
-  }
-
-  .typing-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #8e8e93;
-    animation: typingBounce 1.2s infinite;
-  }
-
-  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
-  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
-
-  @keyframes typingBounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-    30% { transform: translateY(-8px); opacity: 1; }
-  }
-
-  /* INPUT BAR */
-  .input-bar {
-    padding: 10px 16px;
-    background: #f8f8fa;
-    border-top: 0.5px solid #c6c6c8;
-    flex-shrink: 0;
-    backdrop-filter: blur(10px);
-    background: rgba(248, 248, 250, 0.94);
-  }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .input-bar input {
-    flex: 1;
-    padding: 12px 18px;
-    border-radius: 24px;
-    background: #ffffff;
-    border: 0.5px solid #c7c7cc;
-    color: #000;
-    font-size: 1rem;
-    box-shadow: none;
-    transition: border 0.15s;
-    -webkit-appearance: none;
-  }
-
-  .input-bar input:focus {
-    outline: none;
-    border-color: #007aff;
-  }
-
-  .input-bar input::placeholder {
-    color: #8e8e93;
-  }
-
-  .char-counter {
-    font-size: 0.8rem;
-    color: #8e8e93;
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-weight: 400;
-  }
-
-  .char-counter.warning,
-  .char-counter.error {
-    color: #ff3b30;
-    font-weight: 500;
-  }
-
-  .input-bar button {
-    flex-shrink: 0;
-    padding: 10px 20px;
-    border-radius: 24px;
-    border: none;
-    background: #007aff;
-    font-weight: 600;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    min-width: 72px;
-  }
-
-  .input-bar button:hover {
-    opacity: 0.9;
-  }
-
-  .input-bar button:disabled {
-    background: #b3b3b8;
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  /* POLL CARDS */
-  .poll-card {
-    background: #f2f2f7;
-    border: 0.5px solid #d9d9e0;
-    border-radius: 20px;
-    padding: 16px 18px;
-    max-width: 75%;
-    margin: 6px 0;
-    box-shadow: none;
-    align-self: flex-start;
-  }
-
-  .poll-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .poll-badge {
-    background: #007aff;
-    color: white;
-    padding: 2px 10px;
-    border-radius: 16px;
-    font-size: 0.7rem;
-    font-weight: 600;
-  }
-
-  .poll-creator {
-    font-size: 0.8rem;
-    color: #6c6c70;
-  }
-
-  .poll-question {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #000;
-    margin: 8px 0 12px;
-  }
-
-  .poll-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: #ffffff;
-    margin-bottom: 6px;
-    border: 0.5px solid #e0e0e6;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .poll-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    background: #007aff20;
-    border-radius: 14px;
-    transition: width 0.3s;
-    z-index: 0;
-  }
-
-  .poll-option-text {
-    flex: 1;
-    font-size: 0.95rem;
-    color: #000;
-    z-index: 1;
-  }
-
-  .poll-pct {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #007aff;
-    z-index: 1;
-  }
-
-  .poll-footer {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    font-size: 0.8rem;
-    color: #6c6c70;
-  }
-
-  .poll-ended-banner {
-    margin-top: 10px;
-    padding: 8px;
-    background: #fce8b2;
-    border-radius: 12px;
-    color: #000;
-    font-weight: 500;
-    text-align: center;
-  }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.3);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal {
-    background: #ffffff;
-    border-radius: 24px;
-    padding: 28px 24px;
-    min-width: 360px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    border: none;
-  }
-
-  .modal h2 {
-    color: #000;
-    margin-bottom: 20px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.5rem;
-  }
-
-  .modal input {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 0.5px solid #c6c6c8;
-    background: #f9f9fc;
-    margin-bottom: 16px;
-    font-size: 1rem;
-  }
-
-  .modal button {
-    width: 100%;
-    padding: 14px;
-    background: #007aff;
-    border: none;
-    border-radius: 14px;
-    color: white;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-  }
-
-  .warning-toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #ff3b30;
-    color: white;
-    padding: 14px 22px;
-    border-radius: 16px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    font-weight: 500;
-    z-index: 2000;
-  }
-
-  .poll-modal .option-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-
-  .poll-modal .option-row input {
-    flex: 1;
-    margin-bottom: 0;
-  }
-
-  .poll-modal .option-row button {
-    width: 44px;
-    padding: 0;
-    background: #ff3b3020;
-    color: #ff3b30;
-  }
-
-  .add-option-btn {
-    background: transparent;
-    border: 0.5px dashed #8e8e93;
-    color: #007aff;
-    padding: 10px;
-    border-radius: 12px;
-    font-weight: 500;
-    margin-bottom: 14px;
-    cursor: pointer;
-  }
-
-  #createPollBtn {
-    display: none;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Echo OS</title>
+    <link rel="stylesheet" href="style.css">
+    <link id="page-favicon" rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+    <base target="_blank">
+<base target="_blank">
 <base target="_blank">
 </head>
-<body>
-
-<!-- NAME MODAL -->
-<div id="nameModal" class="modal-overlay">
-  <div class="modal">
-    <h2>Echo Chat · EchoOS</h2>
-    <input id="nameInput" placeholder="Your name" maxlength="32" autocomplete="off" />
-    <button id="nameSubmit">Continue</button>
-  </div>
+<body data-theme="dark">
+    <div id="dev-banner" style="position: fixed; top: 0; left: 0; width: 100%; background: #ea4335; color: white; text-align: center; padding: 12px 20px; font-size: 14px; font-weight: 500; z-index: 999999; font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif; box-shadow: 0 2px 10px rgba(234,67,53,0.3);">
+    ⚠️ The website is currently going under huge development. We are fixing games and changing the name of our website soon.
 </div>
-
-<!-- POLL CREATE MODAL -->
-<div id="pollModal" class="modal-overlay" style="display:none">
-  <div class="modal poll-modal">
-    <h2>📊 New Poll</h2>
-    <input id="pollQuestion" placeholder="Ask something…" maxlength="120" />
-    <div id="pollOptions">
-      <div class="option-row"><input placeholder="Option 1" maxlength="80" class="poll-opt-input"/><button class="remove-opt-btn">✕</button></div>
-      <div class="option-row"><input placeholder="Option 2" maxlength="80" class="poll-opt-input"/><button class="remove-opt-btn">✕</button></div>
+<style>
+    #dev-banner { animation: bannerPulse 3s infinite ease-in-out; }
+    @keyframes bannerPulse {
+        0%, 100% { background: #ea4335; }
+        50% { background: #d33426; }
+    }
+    /* Push content down to account for banner */
+    #boot-screen { margin-top: 44px; }
+    #account-loading-screen { margin-top: 44px; }
+    #account-modal { margin-top: 44px; }
+    #welcome-modal { margin-top: 44px; }
+    #setup-screen { margin-top: 44px; }
+    #lock-screen { margin-top: 44px; }
+    #desktop { margin-top: 44px; height: calc(100vh - 44px); }
+    #aboutblank-modal { margin-top: 44px; }
+    #update-modal { margin-top: 44px; }
+    #calendar-modal { margin-top: 44px; }
+</style>
+    <div id="boot-screen">
+        <div class="boot-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 64px; height: 64px; color: #8ab4f8;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+        </div>
+        <div class="boot-loader"></div>
     </div>
-    <button class="add-option-btn" id="addOptionBtn">+ Add option</button>
-    <div style="display:flex; gap:8px; margin-bottom:14px;">
-      <div style="flex:1"><label style="font-size:0.8rem;color:#6c6c70;">Duration</label><input type="number" id="pollDuration" min="1" max="1440" value="5" style="margin:0;"/></div>
-      <div style="flex:1"><label style="font-size:0.8rem;color:#6c6c70;">Unit</label>
-        <select id="pollDurationUnit" style="width:100%;padding:12px;border-radius:12px;border:0.5px solid #c6c6c8;">
-          <option value="60000">Minutes</option>
-          <option value="3600000">Hours</option>
-        </select>
-      </div>
+
+    <!-- Account Loading Screen -->
+    <div id="account-loading-screen" style="display: none;">
+        <div class="account-loading-container">
+            <div class="account-loading-avatar" id="loading-avatar">👤</div>
+            <div class="account-loading-email" id="loading-email"></div>
+            <div class="account-loading-status">Loading your Echo OS data...</div>
+            <div class="account-loading-bar">
+                <div class="account-loading-progress" id="loading-progress"></div>
+            </div>
+            <div class="account-loading-details" id="loading-details">Initializing...</div>
+        </div>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button id="cancelPollBtn" style="background:#e5e5ea;color:#000;">Cancel</button>
-      <button id="submitPollBtn">Launch</button>
+
+    <!-- About Blank Modal -->
+    <div id="aboutblank-modal" style="display: none;">
+        <div class="aboutblank-box">
+            <h2>🔒 About:Blank Cloaking</h2>
+            <p>Do you wish to open in about:blank?</p>
+            <p style="font-size: 12px; color: var(--sys-text-muted); margin-top: 5px;">This helps hide this site from your browser history.</p>
+            <div class="aboutblank-buttons">
+                <button class="ab-btn always" onclick="handleAboutBlank('always')">Always</button>
+                <button class="ab-btn just-once" onclick="handleAboutBlank('once')">Just Once</button>
+                <button class="ab-btn no" onclick="handleAboutBlank('no')">No</button>
+                <button class="ab-btn block" onclick="handleAboutBlank('block')">BLOCK</button>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="section-title">Conversations</div>
-  <div id="publicRoomBtn" class="sidebar-item active">🌐 Public</div>
-  <div id="createRoomBtn" class="sidebar-item">➕ New Chat</div>
-  <div id="joinRoomBtn" class="sidebar-item">🔗 Join Chat</div>
-  <div id="joinedRooms" style="display:flex;flex-direction:column;gap:2px;margin-top:4px;"></div>
-  <div class="section-title" style="margin-top:auto;">Tools</div>
-  <div id="createPollBtn" class="sidebar-item">📊 Create Poll</div>
-</div>
-
-<!-- MAIN CHAT -->
-<div class="chat-area">
-  <div class="chat-header" id="roomTitle">Public</div>
-  <div id="messages" class="messages"><div style="text-align:center;color:#8e8e93;padding:20px;">Messages are end-to-end encrypted</div></div>
-  <div class="input-bar">
-    <div class="input-row">
-      <input id="msgInput" placeholder="iMessage" autocomplete="off" maxlength="300" />
-      <span id="charCounter" class="char-counter">0/300</span>
-      <button id="sendBtn">Send</button>
+    <!-- Update V1.8 Modal -->
+    <div id="update-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100000; justify-content: center; align-items: center;">
+        <div class="update-box" style="background: var(--sys-surface); border-radius: var(--radius-lg); padding: 30px; width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid var(--sys-border);">
+            <h2 style="margin: 0 0 20px 0; color: var(--sys-primary); font-size: 24px;">🎉 Echo OS Development Update <span style="font-size:14px;color:var(--sys-text-muted)">MAY 6</span></h2>
+            <div style="background: rgba(128,128,128,0.1); border-radius: var(--radius-md); padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: var(--sys-text); font-size: 16px;">What's New:</h3>
+                <ul style="margin: 0; padding-left: 20px; color: var(--sys-text); font-size: 14px; line-height: 1.6;">
+                    <li><strong>👤 Echo Account System</strong> - Create and manage Echo OS accounts with @echoos.com</li>
+                    <li><strong>🏠 Fixed Granny 3</strong> - Granny 3 now loads correctly</li>
+                    <li><strong>👵 Added Granny 2</strong> - New horror game available</li>
+                    <li><strong>⚡ Added Pokemon</strong> - Pokemon game now available</li>
+                    <li><strong>🏎️ Fixed Smash Karts</strong> - Smash Karts now loads correctly</li>
+                    <li><strong>🎵 Echo Music Media Controller</strong> - Control music from taskbar</li>
+                    <li><strong>🎤 Fixed Friday Night Funkin</strong> - FNF now loads correctly</li>
+                    <li><strong>🔫 Added 1v1.LOL</strong> - New battle royale shooter available</li>
+                    <li><strong>🔗 Auto Link Creator Removed</strong> - Now a button you can click instead</li>
+                    <li><strong>📌 Continue Where You Left Off</strong> - Active apps shown in launcher</li>
+                    <li><strong>🔋 Battery Saver</strong> - Saves data usage to a file automatically</li>
+                </ul>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <button id="update-continue-btn" onclick="closeUpdateModal()" class="update-countdown-btn" disabled>Continue (5)</button>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<!-- Firebase compat (ban system) — loaded but NOT used until name submitted -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
-// Listen for messages from parent (Echo OS)
-window.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'echo-os-open-chat') {
-    const senderId = event.data.senderId;
-    // Switch to DM room with this user if it exists, or create it
-    const dmRoom = `dm_${[myID, senderId].sort().join('_')}`;
-    if (!joinedRooms.has(dmRoom)) {
-      joinedRooms.add(dmRoom);
-      refreshJoinedRoomsUI();
-    }
-    switchRoom(dmRoom);
-  }
-});
-</script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js">
-// Listen for messages from parent (Echo OS)
-window.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'echo-os-open-chat') {
-    const senderId = event.data.senderId;
-    // Switch to DM room with this user if it exists, or create it
-    const dmRoom = `dm_${[myID, senderId].sort().join('_')}`;
-    if (!joinedRooms.has(dmRoom)) {
-      joinedRooms.add(dmRoom);
-      refreshJoinedRoomsUI();
-    }
-    switchRoom(dmRoom);
-  }
-});
-</script>
+    <!-- Account System Modal -->
+    <div id="account-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a73e8 0%, #4285f4 50%, #8ab4f8 100%); z-index: 99996; justify-content: center; align-items: center;">
+        <div class="account-box">
+            <div class="account-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; color: white;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+            </div>
+            <h2>Welcome to Echo OS</h2>
+            <p class="account-subtitle">Sign in with your Echo Account</p>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onValue, update, off, query, limitToLast, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+            <div id="account-signin-view">
+                <div class="account-input-group">
+                    <label>Email</label>
+                    <input type="text" id="account-email-input" class="account-input" placeholder="username@echoos.com">
+                </div>
+                <div class="account-input-group">
+                    <label>Password</label>
+                    <input type="password" id="account-password-input" class="account-input" placeholder="Enter your password">
+                </div>
+                <button class="account-btn-primary" onclick="signInAccount()">Sign In</button>
+                <div class="account-divider">
+                    <span>or</span>
+                </div>
+                <button class="account-btn-secondary" onclick="showCreateAccount()">Create New Account</button>
+            </div>
 
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const OWNER_IDS    = ["6528690208","3222695271","0376780508","0635354315","3293484597","9937301888","5069664537","1362852477","4025448996","2126917941"];
-const PREMIUM_IDS  = ["6528690208","3222695271","0376780508","0635354315","3293484597","9937301888","5069664537","1362852477","2126917941","1683031661","1164450983"];
-const ID_KEY       = "numericUserID";
-const WORKER_URL   = "https://soft-wind-7f84.t9osta.workers.dev/";
-const MAX_CHARS    = 300;
-const MESSAGE_COOLDOWN = 5000;
-const AI_API       = WORKER_URL;
+            <div id="account-create-view" style="display: none;">
+                <div class="account-input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="create-name-input" class="account-input" placeholder="Enter your full name">
+                </div>
+                <div class="account-input-group">
+                    <label>Choose Username</label>
+                    <div class="account-username-wrapper">
+                        <input type="text" id="create-username-input" class="account-input" placeholder="username" oninput="updateEmailPreview()">
+                        <span class="account-domain">@echoos.com</span>
+                    </div>
+                    <div class="account-email-preview" id="email-preview"></div>
+                </div>
+                <div class="account-input-group">
+                    <label>Password</label>
+                    <input type="password" id="create-password-input" class="account-input" placeholder="Create a password">
+                </div>
+                <div class="account-input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="create-confirm-input" class="account-input" placeholder="Confirm your password">
+                </div>
+                <button class="account-btn-primary" onclick="createAccount()">Create Account</button>
+                <button class="account-btn-text" onclick="showSignIn()">Back to Sign In</button>
+            </div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCTUq6Hye-l6Lh2ylHQ4yOM-HUWODGgMtY",
-  authDomain: "chatty-boi-c876e.firebaseapp.com",
-  databaseURL: "https://chatty-boi-c876e-default-rtdb.firebaseio.com",
-  projectId: "chatty-boi-c876e",
-  storageBucket: "chatty-boi-c876e.firebasestorage.app",
-  messagingSenderId: "1073159135051",
-  appId: "1:1073159135051:web:8c991df26ea3c1eb84d2ce"
-};
+            <div id="account-error" class="account-error"></div>
+        </div>
+    </div>
 
-// ─── STATE (nothing initialised yet) ─────────────────────────────────────────
-let app, db, banApp, banDB;
-let myID = null, username = "Anonymous", currentRoom = "public";
-let currentUnsubscribe = null;
-let violationCount = 0, lastMessageTime = 0, isAIThinking = false;
-let joinedRooms = new Set(['public']);
-let userGeoData = null;
-const activePollListeners = {};
+    <div id="welcome-modal" style="display: none;">
+        <div class="welcome-box">
+            <h2>🎉 Welcome to ECHO OS!!!</h2>
+            <p>You're new to Echo OS. Echo OS is being built with care.</p>
+            <p>Do whatever you like in this OS system. New features will be added soon, Check the updates in Settings..</p>
+            <p style="color: var(--sys-primary); font-size: 12px; margin-top: 15px;">Enjoy Echo OS. Created on Nov 21 4:52PM</p>
+            <button onclick="closeWelcomeModal()">Awesome!</button>
+        </div>
+    </div>
 
-// ─── DOM REFS ─────────────────────────────────────────────────────────────────
-const messagesEl     = document.getElementById('messages');
-const msgInput       = document.getElementById('msgInput');
-const sendBtn        = document.getElementById('sendBtn');
-const charCounter    = document.getElementById('charCounter');
-const roomTitle      = document.getElementById('roomTitle');
-const nameModal      = document.getElementById('nameModal');
-const nameInput      = document.getElementById('nameInput');
-const nameSubmit     = document.getElementById('nameSubmit');
-const publicRoomBtn  = document.getElementById('publicRoomBtn');
-const createRoomBtn  = document.getElementById('createRoomBtn');
-const joinRoomBtn    = document.getElementById('joinRoomBtn');
-const joinedRoomsEl  = document.getElementById('joinedRooms');
-const createPollBtn  = document.getElementById('createPollBtn');
-const pollModal      = document.getElementById('pollModal');
-const pollQuestion   = document.getElementById('pollQuestion');
-const pollOptionsEl  = document.getElementById('pollOptions');
-const addOptionBtn   = document.getElementById('addOptionBtn');
-const submitPollBtn  = document.getElementById('submitPollBtn');
-const cancelPollBtn  = document.getElementById('cancelPollBtn');
-const pollDuration   = document.getElementById('pollDuration');
-const pollDurationUnit = document.getElementById('pollDurationUnit');
+    <div id="setup-screen" style="display: none;">
+        <div class="setup-card">
+            <div id="setup-step-1" class="setup-step active">
+                <div class="setup-icon">👋</div>
+                <h2 class="setup-title">Welcome to Echo OS</h2>
+                <p class="setup-text">Let's get your new workspace set up. Who is going to be using this device?</p>
+                <input type="text" id="setup-name-input" class="setup-input" placeholder="Enter your full name">
+                <div class="setup-buttons">
+                    <button class="setup-btn-primary" onclick="processSetupStep1()">Continue</button>
+                </div>
+            </div>
+            <div id="setup-step-2" class="setup-step">
+                <div class="setup-icon">🔒</div>
+                <h2 class="setup-title">Secure your device</h2>
+                <p class="setup-text">Create a password to protect your data and prevent unauthorized access.</p>
+                <input type="password" id="setup-pass-input" class="setup-input" placeholder="Choose a password (Optional)">
+                <div class="setup-buttons">
+                    <button class="setup-btn-secondary" onclick="processSetupStep2(true)">Skip</button>
+                    <button class="setup-btn-primary" onclick="processSetupStep2(false)">Set Password</button>
+                </div>
+            </div>
+            <div id="setup-step-3" class="setup-step">
+                <div class="setup-icon">📜</div>
+                <h2 class="setup-title">Review Terms of Use</h2>
+                <p class="setup-text">Please review the system guidelines before continuing to your desktop environment.</p>
+                <div class="tou-box">
+                    <strong>Terms of Use:</strong><br><br>
+                    This is a Chrome Simulation Website that is only for playing, and simulation use.<br><br>
+                    If used for proxy or playing use, You will be banished and banned from the website forever.
+                </div>
+                <div class="setup-buttons">
+                    <button class="setup-btn-secondary" onclick="location.reload()">Decline</button>
+                    <button class="setup-btn-primary" onclick="finalizeSetup()">Accept and Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-const profanityPatterns = [/n+[i1!|]+[gq9]+[e3a@]+r+/gi, /f+[\s\.\-_]*u+[\s\.\-_]*c+[\s\.\-_]*k+/gi];
-function containsProfanity(t){ return profanityPatterns.some(p=>p.test(t)); }
-function escapeHtml(s){ return (s+'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
-function showWarning(m){ const t=document.createElement('div'); t.className='warning-toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
-function isPremiumUser(id){ return OWNER_IDS.includes(id); }
-function buildLocationString(geo){ if(!geo) return ''; return [geo.city,geo.state,geo.country||geo.cc].filter(Boolean).join(', '); }
+    <div id="lock-screen" style="display: none;">
+        <div class="lock-container">
+            <div class="lock-content">
+                <div class="lock-user-avatar">
+                    <img src="https://www.gravatar.com/avatar/?d=mp&s=128" alt="User" id="lock-avatar-img">
+                </div>
+                <h2 id="echo-lock-username" class="echo-lock-username">User</h2>
+                <div id="echo-lock-email" class="echo-lock-email"></div>
+                <button class="lock-option-btn" onclick="goIntoAboutBlank()" style="margin-bottom: 20px; background: rgba(255,255,255,0.2); font-size: 12px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <line x1="3" y1="3" x2="21" y2="21"/>
+                    </svg>
+                    🔒 Go into about:blank
+                </button>
+                <div class="lock-input-wrapper">
+                    <input type="password" id="lock-password" class="lock-password-input" placeholder="Enter password">
+                    <button class="lock-submit-btn" onclick="unlockOS()">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="lock-error" class="lock-error">Incorrect password. Please try again.</div>
+                <div class="lock-options">
+                    <button class="lock-option-btn" onclick="showSecurityQuestion()">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        Forgot password?
+                    </button>
+                </div>
+                <div id="security-hint" class="security-hint" style="display: none;">
+                    <p id="lock-question-text"></p>
+                </div>
+            </div>
+            <div class="lock-accounts-section">
+                <div class="lock-accounts-header">
+                    <span>Other Accounts</span>
+                    <button class="lock-add-account-btn" onclick="showAccountModalFromLock()">+ Add Account</button>
+                </div>
+                <div class="lock-accounts-list" id="lock-accounts-list"></div>
+            </div>
+            <div class="lock-footer">
+                <button class="lock-shutdown-btn" onclick="location.reload()" title="Shut down">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                        <line x1="12" y1="2" x2="12" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
-// ─── RESOLVE USER ID (called only after name submit) ─────────────────────────
-async function resolveUserID(){
-  try{
-    const res = await fetch(WORKER_URL + "getid", { method:"GET", signal: AbortSignal.timeout(4000) });
-    if(res.ok){ const data=await res.json(); if(data&&data.id){ localStorage.setItem(ID_KEY,data.id); return data.id; } }
-  } catch(_){}
-  let id = localStorage.getItem(ID_KEY);
-  if(!id){ id = Math.floor(Math.random()*10000).toString().padStart(4,'0') + Date.now().toString().slice(-6); localStorage.setItem(ID_KEY,id); }
-  return id;
-}
+    <div id="desktop">
+        <div id="context-menu" style="display: none;">
+            <div class="context-item" onclick="location.reload()">🔄 Refresh</div>
+            <div class="context-item" onclick="openApp('settings-window')">🖼️ Set wallpaper</div>
+            <div class="context-divider"></div>
+            <div class="context-item" id="context-uninstall" style="display: none; color: #ea4335;">🗑️ Uninstall App</div>
+            <div class="context-item" onclick="lockSystem()">🔒 Lock screen</div>
+        </div>
 
-// ─── BAN SYSTEM (initialised only after name submit) ─────────────────────────
-function initBanSystem(id){
-  const banFirebaseConfig = {
-    apiKey: "AIzaSyCTUq6Hye-l6Lh2ylHQ4yOM-HUWODGgMtY",
-    authDomain: "chatty-boi-c876e.firebaseapp.com",
-    databaseURL: "https://chatty-boi-c876e-default-rtdb.firebaseio.com",
-    projectId: "chatty-boi-c876e",
-    storageBucket: "chatty-boi-c876e.firebasestorage.app",
-    messagingSenderId: "1073159135051",
-    appId: "1:1073159135051:web:8c991df26ea3c1eb84d2ce"
-  };
+        <div id="launcher-context-menu" style="display: none;">
+            <div class="context-item" onclick="launcherContextAction('open')">▶️ Open</div>
+            <div class="context-item" onclick="launcherContextAction('addToShelf')">📌 Add to Shelf</div>
+            <div class="context-divider"></div>
+            <div class="context-item" onclick="launcherContextAction('uninstall')" style="color: #ea4335;">🗑️ Uninstall</div>
+        </div>
 
-  banApp = firebase.initializeApp(banFirebaseConfig, "banApp");
-  banDB  = firebase.database(banApp);
+        <div id="calendar-modal" style="display: none;">
+            <div class="calendar-box">
+                <div class="calendar-header">
+                    <button onclick="changeMonth(-1)">◀</button>
+                    <h3 id="calendar-month-year">March 2026</h3>
+                    <button onclick="changeMonth(1)">▶</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                <div class="calendar-days" id="calendar-days"></div>
+            </div>
+        </div>
 
-  // Expose for sendMessage ban write
-  window.banDatabase = banDB;
+        <div id="snap-preview"></div>
 
-  // Lock screen helper
-  function lockScreen(){
-    document.body.innerHTML = "";
-    document.body.style.cssText = "background:#1c1c1e;color:white;display:flex;justify-content:center;align-items:center;font-size:40px;height:100vh;";
-    document.body.innerText = "BANNED";
-    const preventAll = e => { e.preventDefault(); e.stopPropagation(); };
-    ['keydown','keyup','keypress','mousedown','mouseup','click'].forEach(ev => document.addEventListener(ev, preventAll, true));
-  }
+        <div id="desktop-icons-container">
+            <div class="desktop-icon" id="di-store" style="top: 20px; left: 20px;" ondblclick="openApp('store-window')"><div class="icon-emoji">🛍️</div><div class="icon-text">App Store</div></div>
+            <div class="desktop-icon" id="di-games" style="top: 120px; left: 20px;" ondblclick="openApp('files-window')"><div class="icon-emoji">📁</div><div class="icon-text">Files</div></div>
+        </div>
 
-  // Live ban listener
-  banDB.ref("bannedIDs").on("value", snap => {
-    if((snap.val()||[]).includes(id)) lockScreen();
-  });
+        <div class="window" id="files-window" style="display: none;">
+            <div class="window-header" id="files-window-header"><span class="window-title">📁 Files</span><div><button class="win-btn" onclick="minimizeApp('files-window')">−</button><button class="win-btn" onclick="maximizeApp('files-window')">□</button><button class="win-btn close-btn" onclick="closeApp('files-window')">✕</button></div></div>
+            <div class="window-content" style="padding: 20px;">
+                <p style="margin-top: 0; color: var(--sys-text-muted); font-size: 13px;">My Device / Local Storage</p>
+                <div id="file-explorer-grid" class="file-grid"></div>
+            </div>
+        </div>
 
-  // Owner ban/unban hotkey
-  document.addEventListener("keydown", async e => {
-    if(!OWNER_IDS.includes(id) || e.key !== ",") return;
-    const action = prompt("ban/unban"); if(!action) return;
-    const target = prompt("ID"); if(!target) return;
-    const snap = await banDB.ref("bannedIDs").get();
-    let banned = snap.val() || [];
-    if(action.toLowerCase() === "ban"){
-      if(!banned.includes(target)){ banned.push(target); await banDB.ref("bannedIDs").set(banned); }
-    } else {
-      banned = banned.filter(x => x !== target);
-      await banDB.ref("bannedIDs").set(banned);
-    }
-  });
+        <div class="window" id="wordpad-window" style="display: none;">
+            <div class="window-header" id="wordpad-window-header"><span class="window-title">📝 Wordpad</span><div><button class="win-btn" onclick="minimizeApp('wordpad-window')">−</button><button class="win-btn" onclick="maximizeApp('wordpad-window')">□</button><button class="win-btn close-btn" onclick="closeApp('wordpad-window')">✕</button></div></div>
+            <div class="browser-toolbar">
+                <button onclick="notepadSave()" title="Save">💾 Save</button>
+                <button onclick="notepadSaveAs()" title="Save As">💾 Save As</button>
+                <button onclick="notepadOpen()" title="Open">📂 Open</button>
+                <div style="width: 1px; background: var(--sys-border); margin: 0 10px;"></div>
+                <button onclick="document.execCommand('undo')">↩</button><button onclick="document.execCommand('redo')">↪</button>
+                <button onclick="document.execCommand('bold')"><b>B</b></button><button onclick="document.execCommand('italic')"><i>I</i></button><button onclick="document.execCommand('underline')"><u>U</u></button>
+            </div>
+            <div class="window-content"><div id="wordpad-editor" contenteditable="true" placeholder="Start typing here..." style="padding: 20px; outline: none; height: 100%;"></div></div>
+        </div>
 
-  // Prevent ID tampering
-  setInterval(() => { if(localStorage.getItem(ID_KEY) !== id) localStorage.setItem(ID_KEY, id); }, 100);
-}
+        <div class="window" id="calc-window" style="display: none; width: 320px; height: 480px;">
+            <div class="window-header" id="calc-window-header"><span class="window-title">🧮 Calculator</span><div><button class="win-btn" onclick="minimizeApp('calc-window')">−</button><button class="win-btn" onclick="maximizeApp('calc-window')">□</button><button class="win-btn close-btn" onclick="closeApp('calc-window')">✕</button></div></div>
+            <div class="window-content calc-bg">
+                <input type="text" id="calc-display" disabled value="0">
+                <div class="calc-grid">
+                    <button class="calc-btn span-2 action-light" onclick="calcClear()">C</button>
+                    <button class="calc-btn action-light" onclick="calcPress('/')">÷</button>
+                    <button class="calc-btn action-light" onclick="calcPress('*')">×</button>
+                    <button class="calc-btn" onclick="calcPress('7')">7</button><button class="calc-btn" onclick="calcPress('8')">8</button><button class="calc-btn" onclick="calcPress('9')">9</button>
+                    <button class="calc-btn action-light" onclick="calcPress('-')">−</button>
+                    <button class="calc-btn" onclick="calcPress('4')">4</button><button class="calc-btn" onclick="calcPress('5')">5</button><button class="calc-btn" onclick="calcPress('6')">6</button>
+                    <button class="calc-btn action-light" onclick="calcPress('+')">+</button>
+                    <button class="calc-btn" onclick="calcPress('1')">1</button><button class="calc-btn" onclick="calcPress('2')">2</button><button class="calc-btn" onclick="calcPress('3')">3</button>
+                    <button class="calc-btn action-blue" onclick="calcEval()" style="grid-row: span 2;">=</button>
+                    <button class="calc-btn span-2" onclick="calcPress('0')">0</button><button class="calc-btn" onclick="calcPress('.')">.</button>
+                </div>
+            </div>
+        </div>
 
-// ─── CHAT LOGIC ───────────────────────────────────────────────────────────────
-function appendMessage(payload){
-  if(payload.isAI){ appendAIMessage(payload.text); return; }
-  if(payload.isPoll){
-    const pollRef = ref(db, 'polls/' + currentRoom + '/' + payload.pollId);
-    onValue(pollRef, s => { if(s.val()) renderPollCard(s.val(), payload.pollId); }, { onlyOnce: true });
-    return;
-  }
-  const div = document.createElement('div');
-  const isOwnMessage = payload.id === myID;
-  const isPremiumSender = isPremiumUser(payload.id);
-  const amPremium = window.isPremium;
-  div.className = 'msg' + (isOwnMessage ? ' own' : '');
-  const displayName = payload.name || 'Anon';
-  const nameWithId = `${displayName} (${payload.id})`;
-  const premiumBadge = isPremiumSender ? '<span class="premium-badge">Premium</span>' : '';
-  let locationBadge = '';
-  if(amPremium && payload.geo){
-    const locStr = buildLocationString(payload.geo);
-    if(locStr) locationBadge = `<span class="location-badge">📍 ${escapeHtml(locStr)}</span>`;
-  }
-  const nameClass = isPremiumSender ? 'msg-name premium-name' : 'msg-name';
-  div.innerHTML = `<div class="${nameClass}">${escapeHtml(nameWithId)} ${premiumBadge} ${locationBadge}</div>
-                   <div class="msg-bubble">${escapeHtml(payload.text)}</div>`;
-  messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
+        <div class="window" id="chrome-window" style="display: none;">
+            <div class="window-header" id="chrome-window-header">
+                <span class="window-title">🌐 Google Chrome</span>
+                <div>
+                    <button class="win-btn" onclick="minimizeApp('chrome-window')">−</button>
+                    <button class="win-btn" onclick="maximizeApp('chrome-window')">□</button>
+                    <button class="win-btn close-btn" onclick="closeApp('chrome-window')">✕</button>
+                </div>
+            </div>
+            <div class="window-content" style="padding: 0; overflow: hidden;">
+                <iframe src="Apps/ChromeReworked.html" width="100%" height="100%" frameborder="0" allow="fullscreen"></iframe>
+            </div>
+        </div>
 
-function appendAIMessage(t){
-  const d = document.createElement('div');
-  d.className = 'msg ai-msg';
-  d.innerHTML = `<div class="msg-name">🤖 Echo AI <span class="ai-badge">AI</span></div><div class="msg-bubble">${escapeHtml(t)}</div>`;
-  messagesEl.appendChild(d);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
+        <div class="window" id="settings-window" style="display: none;">
+            <div class="window-header" id="settings-window-header"><span class="window-title">⚙️ Settings</span><div><button class="win-btn" onclick="minimizeApp('settings-window')">−</button><button class="win-btn" onclick="maximizeApp('settings-window')">□</button><button class="win-btn close-btn" onclick="closeApp('settings-window')">✕</button></div></div>
+            <div class="window-content" style="padding: 20px;">
+                <h3 class="settings-title">Account</h3>
+                <div class="settings-card">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1a73e8, #8ab4f8); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;" id="settings-account-avatar">👤</div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;" id="settings-account-name">Not signed in</div>
+                            <div style="font-size: 12px; color: var(--sys-text-muted);" id="settings-account-email">-</div>
+                        </div>
+                    </div>
+                    <button onclick="switchAccount()" class="modern-btn" style="margin-right: 10px;">🔄 Switch Account</button>
+                    <button onclick="signOutAccount()" class="modern-btn" style="background: #ea4335;">🚪 Sign Out</button>
+                </div>
 
-function showAITyping(){
-  const d = document.createElement('div');
-  d.id = 'aiTyping';
-  d.className = 'msg ai-msg ai-typing';
-  d.innerHTML = `<div class="msg-name">🤖 Echo AI</div><div class="msg-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
-  messagesEl.appendChild(d);
-}
+                <h3 class="settings-title">Personalization</h3>
+                <div class="settings-card">
+                    <p>Choose a theme wallpaper:</p>
+                    <div class="wallpaper-grid">
+                        <img src="https://images.unsplash.com/photo-1506744626753-1fa44df31c22?q=80&w=400" onclick="setWallpaper(this.src)" title="Canyon">
+                        <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=400" onclick="setWallpaper(this.src)" title="Valley">
+                        <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=400" onclick="setWallpaper(this.src)" title="Beach">
+                        <img src="https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=400" onclick="setWallpaper(this.src)" title="Forest">
+                    </div>
+                    <p style="margin-top:10px;">Or upload your own:</p>
+                    <input type="file" id="wallpaper-upload" accept="image/png, image/jpeg" class="modern-file-input">
+                </div>
 
-function removeAITyping(){ document.getElementById('aiTyping')?.remove(); }
+                <h3 class="settings-title">Tab Cloaking</h3>
+                <div class="settings-card">
+                    <p>Change how this site appears in your browser tab:</p>
+                    <select id="cloak-selector" onchange="changeTabCloak()" style="width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--sys-border); background: transparent; color: var(--sys-text); margin-bottom: 10px;">
+                        <option value="echo">Echo OS (Default)</option>
+                        <option value="fleckle">Fleckle</option>
+                        <option value="classroom">Google Classroom</option>
+                        <option value="flocabulary">Flocabulary</option>
+                        <option value="docs">Google Docs</option>
+                        <option value="slides">Google Slides</option>
+                        <option value="drive">Google Drive</option>
+                        <option value="canvas">Canvas</option>
+                        <option value="clever">Clever</option>
+                        <option value="khan">Khan Academy</option>
+                        <option value="ixl">IXL</option>
+                        <option value="quizlet">Quizlet</option>
+                        <option value="desmos">Desmos</option>
+                        <option value="wikipedia">Wikipedia</option>
+                        <option value="britannica">Britannica</option>
+                        <option value="codewars">Codewars</option>
+                        <option value="github">GitHub</option>
+                        <option value="stackoverflow">Stack Overflow</option>
+                        <option value="chess">Chess.com</option>
+                        <option value="coolmath">Cool Math Games</option>
+                        <option value="poki">Poki</option>
+                        <option value="scratch">Scratch</option>
+                        <option value="codeorg">Code.org</option>
+                        <option value="typing">Typing.com</option>
+                        <option value="nitrotype">Nitro Type</option>
+                        <option value="prodigy">Prodigy</option>
+                        <option value="readworks">ReadWorks</option>
+                        <option value="newsela">Newsela</option>
+                        <option value="nearpod">Nearpod</option>
+                        <option value="edpuzzle">Edpuzzle</option>
+                        <option value="blooket">Blooket</option>
+                        <option value="gimkit">Gimkit</option>
+                        <option value="kahoot">Kahoot!</option>
+                    </select>
+                    <p id="cloak-status" style="font-size: 12px; color: var(--sys-text-muted); margin: 0;">Current: Echo OS</p>
+                </div>
 
-async function callAI(prompt){
-  if(isAIThinking){ showWarning('AI is still thinking...'); return; }
-  isAIThinking = true; sendBtn.disabled = true; showAITyping();
-  try{
-    const res = await fetch(AI_API, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({message: prompt}),
-      signal: AbortSignal.timeout(15000)
-    });
-    const text = await res.text();
-    let reply = text;
-    try{ const json=JSON.parse(text); reply=json.response||json.reply||json.message||json.text||text; } catch{}
-    removeAITyping();
-    await push(ref(db,"messages/"+currentRoom),{ name:"Echo AI", id:"AI_BOT", text:reply, timestamp:Date.now(), isAI:true });
-  } catch(e){
-    removeAITyping();
-    appendAIMessage("⚠️ AI error: Unable to get response");
-  } finally {
-    isAIThinking = false; sendBtn.disabled = false;
-  }
-}
+                <h3 class="settings-title">About:Blank Cloaking</h3>
+                <div class="settings-card">
+                    <p>Auto-open in about:blank for extra privacy:</p>
+                    <select id="aboutblank-setting" onchange="saveAboutBlankSetting()" style="width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--sys-border); background: transparent; color: var(--sys-text); margin-bottom: 10px;">
+                        <option value="always">Always (Auto Cloak)</option>
+                        <option value="ask">Ask each time</option>
+                        <option value="never">Never</option>
+                    </select>
+                    <p id="aboutblank-blocked-msg" style="display: none; font-size: 12px; color: #ea4335; margin: 0;">You have blocked about:blank prompts. Select "Ask each time" or "Always" to re-enable.</p>
+                </div>
 
-async function sendMessage(){
-  const txt = msgInput.value.trim();
-  if(!txt) return;
-  if(txt.toLowerCase().startsWith('!ai ')){
-    const prompt = txt.slice(4).trim();
-    if(!prompt){ showWarning('Please provide a prompt after !ai'); return; }
-    msgInput.value=''; updateCharCounter();
-    appendMessage({id:myID, name:username, text:txt, geo:userGeoData});
-    callAI(prompt);
-    return;
-  }
-  if(Date.now()-lastMessageTime < MESSAGE_COOLDOWN){ showWarning(`Please wait ${Math.ceil((MESSAGE_COOLDOWN-(Date.now()-lastMessageTime))/1000)} seconds`); return; }
-  if(txt.length > MAX_CHARS){ showWarning(`Message too long! Maximum ${MAX_CHARS} characters.`); return; }
-  if(containsProfanity(txt)){
-    msgInput.value=''; updateCharCounter();
-    violationCount++;
-    if(violationCount >= 3){
-      showWarning('You have been banned for 3 violations');
-      const bannedRef = window.banDatabase.ref("bannedIDs");
-      const snap = await bannedRef.get();
-      let banned = snap.val()||[];
-      if(!banned.includes(myID)){ banned.push(myID); await bannedRef.set(banned); }
-      setTimeout(()=>location.reload(),2000);
-    } else {
-      showWarning(`Warning ${violationCount}/3: Inappropriate language`);
-    }
-    return;
-  }
-  sendBtn.disabled = true;
-  try{
-    const msgData = { name:username, id:myID, text:txt, timestamp:Date.now(), geo:userGeoData };
-    await push(ref(db,"messages/"+currentRoom), msgData);
+                <h3 class="settings-title">Link Creator</h3>
+                <div class="settings-card">
+                    <p>Create and share your own custom links:</p>
+                    <button onclick="openApp('linkcreator-window')" class="modern-btn" style="margin-top: 10px;">🚀 Open Link Creator</button>
+                </div>
 
-    // Notify parent (Echo OS) about the message for DM notifications
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'echo-chat-message',
-        username: username,
-        profile: '💬',
-        message: txt,
-        senderId: myID,
-        room: currentRoom,
-        timestamp: Date.now()
-      }, '*');
-    }
+                <h3 class="settings-title">Security and Sign-in</h3>
+                <div class="settings-card">
+                    <input type="password" id="set-password" placeholder="Update Password" class="modern-input"><br>
+                    <input type="text" id="set-question" placeholder="Security Question (e.g., First pet's name?)" class="modern-input"><br>
+                    <input type="text" id="set-answer" placeholder="Answer" class="modern-input"><br>
+                    <button onclick="saveSecuritySettings()" class="modern-btn">Save Security Info</button>
+                    <p id="security-save-msg" style="color: #81c995; display: none; font-size: 13px; margin-top:10px;">Security settings saved!</p>
+                </div>
 
-    msgInput.value=''; updateCharCounter();
-    lastMessageTime = Date.now();
-  } catch(e){
-    console.error('Error sending message:',e);
-    showWarning('Failed to send message');
-  }
-  setTimeout(()=>sendBtn.disabled=false, MESSAGE_COOLDOWN);
-}
+                <h3 class="settings-title">System Updates</h3>
+                <div class="settings-card">
+                    <strong style="display: block; margin-bottom: 5px;">Echo OS v1.0 Development Build</strong>
+                    <ul style="font-size: 13px; color: var(--sys-text-muted); margin-top: 0; margin-bottom: 15px; padding-left: 20px;">
+                        <li>🛍️ Upgraded The Play Store - detail modals, browse all items</li>
+                        <li>🔧 Fixed the Servers - connectivity issues resolved</li>
+                        <li>📱 Added Bitlife - text-based life simulator</li>
+                        <li>🏈 Added Football Bros - football sports game</li>
+                        <li>⭐ Favorites Tab - save favorite games and apps</li>
+                        <li>📱 Apps Category - browse apps in Store</li>
+                        <li>👤 Echo Account System - Create and manage Echo OS accounts</li>
+                        <li>🎵 Echo Music Media Controller - control from taskbar</li>
+                        <li>Continue where you left off - active apps in launcher</li>
+                        <li>Battery Saver - saves data usage to file automatically</li>
+                    </ul>
+                    <button onclick="alert('Your system is up to date!')" class="modern-btn">Check for Updates</button>
+                </div>
 
-function updateCharCounter(){
-  const l = msgInput.value.length;
-  charCounter.textContent = `${l}/${MAX_CHARS}`;
-  charCounter.classList.remove('warning','error');
-  if(l > MAX_CHARS*0.9) charCounter.classList.add('error');
-  else if(l > MAX_CHARS*0.75) charCounter.classList.add('warning');
-}
+                <h3 class="settings-title" style="color: #ea4335;">System Operations</h3>
+                <div class="settings-card">
+                    <p style="font-size: 13px; margin-top: 0;">Erase all data and reset the system to factory defaults.</p>
+                    <button onclick="factoryReset()" class="modern-btn" style="background: #ea4335; color: white;">Factory Reset</button>
+                </div>
+            </div>
+        </div>
 
-// ─── ROOM MANAGEMENT ─────────────────────────────────────────────────────────
-function refreshJoinedRoomsUI(){
-  joinedRoomsEl.innerHTML='';
-  joinedRooms.forEach(room=>{
-    if(room==='public') return;
-    const div=document.createElement('div');
-    div.className='sidebar-item'+(room===currentRoom?' active':'');
-    div.textContent=`💬 ${room}`;
-    div.dataset.room=room;
-    div.addEventListener('click',()=>switchRoom(room));
-    joinedRoomsEl.appendChild(div);
-  });
-}
+        <div class="window" id="store-window" style="display: none; width: 900px; height: 650px;">
+            <div class="window-header" id="store-window-header"><span class="window-title">🛍️ Play Store</span><div><button class="win-btn" onclick="minimizeApp('store-window')">−</button><button class="win-btn" onclick="maximizeApp('store-window')">□</button><button class="win-btn close-btn" onclick="closeApp('store-window')">✕</button></div></div>
+            <div class="window-content store-bg" style="padding: 0; display: flex; flex-direction: column;">
+                <div id="new-play-store" style="display: flex; height: 100%; background: #1a1a2e; color: #e8eaed; font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif; position: relative;">
 
-function switchRoom(room){
-  if(!room||room===currentRoom) return;
-  if(currentUnsubscribe){ currentUnsubscribe(); currentUnsubscribe=null; }
-  Object.keys(activePollListeners).forEach(k=>{ if(typeof activePollListeners[k]==='function') activePollListeners[k](); delete activePollListeners[k]; });
-  currentRoom=room;
-  roomTitle.textContent=room==='public'?'Public':room;
-  messagesEl.innerHTML='';
-  document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active'));
-  if(room==='public') publicRoomBtn.classList.add('active');
-  else joinedRoomsEl.querySelectorAll('.sidebar-item').forEach(item=>{ if(item.dataset.room===room) item.classList.add('active'); });
-  loadMessages(room);
-}
+                    <!-- Left Sidebar -->
+                    <div id="ps-sidebar" style="width: 200px; background: #16213e; display: flex; flex-direction: column; padding: 15px 0; border-right: 1px solid rgba(255,255,255,0.05);">
+                        <div style="padding: 0 15px 20px; display: flex; align-items: center; gap: 10px;">
+                            <div id="ps-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1a73e8, #8ab4f8); display: flex; align-items: center; justify-content: center; font-size: 16px;">👤</div>
+                            <div style="font-size: 13px; font-weight: 500; color: #e8eaed; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="ps-username">User</div>
+                        </div>
+                        <div style="padding: 0 15px 15px;">
+                            <button onclick="showPlayStoreTab('favorites')" id="ps-fav-btn" style="background: transparent; border: none; color: #ffd700; font-size: 20px; cursor: pointer; padding: 5px; border-radius: 8px; transition: 0.2s;">⭐</button>
+                        </div>
+                        <div id="ps-sidebar-categories" style="padding: 0 15px 10px; display: flex; gap: 8px;">
+                            <button id="ps-sidebar-games-btn" onclick="switchSidebarCategory('games')" style="flex: 1; padding: 8px 0; background: var(--ps-primary); color: white; border: none; border-radius: 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: inherit;">🎮 Games</button>
+                            <button id="ps-sidebar-apps-btn" onclick="switchSidebarCategory('apps')" style="flex: 1; padding: 8px 0; background: rgba(255,255,255,0.05); color: #9aa0a6; border: none; border-radius: 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; font-family: inherit;">📱 Apps</button>
+                        </div>
+                        <div id="ps-app-list" style="flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 2px;"></div>
+                        <div id="ps-game-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px;"></div>
+                    </div>
 
-function loadMessages(room){
-  if(currentUnsubscribe){ currentUnsubscribe(); currentUnsubscribe=null; }
-  messagesEl.innerHTML='';
-  const messagesRef=ref(db,"messages/"+room);
-  const limitedQuery=query(messagesRef,limitToLast(100));
-  currentUnsubscribe=onChildAdded(limitedQuery,snap=>{ const data=snap.val(); if(data) appendMessage(data); }, err=>console.error('Error loading messages:',err));
-}
+                    <!-- Main Content -->
+                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
 
-// ─── POLLS ────────────────────────────────────────────────────────────────────
-function getWinnerIdx(pollData){
-  const votes=pollData.votes||{}; let max=-1,winner=0;
-  pollData.options.forEach((_,i)=>{ const v=votes[i]||0; if(v>max){max=v;winner=i;} });
-  return winner;
-}
-function formatTimeLeft(ms){
-  if(ms<=0) return 'Ended';
-  const s=Math.floor(ms/1000); if(s<60) return s+'s left';
-  const m=Math.floor(s/60); if(m<60) return m+'m left';
-  return Math.floor(m/60)+'h left';
-}
-function renderPollCard(pollData,pollId){
-  const existing=document.getElementById('poll-'+pollId);
-  if(existing){ updatePollCard(existing,pollData); return; }
-  const isEnded=Date.now()>=pollData.endsAt;
-  const totalVotes=Object.values(pollData.votes||{}).reduce((a,b)=>a+b,0);
-  const userVoted=pollData.voters&&pollData.voters[myID];
-  const winnerIdx=isEnded?getWinnerIdx(pollData):-1;
-  const card=document.createElement('div');
-  card.className='poll-card'; card.id='poll-'+pollId;
-  const optionsHtml=pollData.options.map((opt,i)=>{
-    const votes=(pollData.votes&&pollData.votes[i])||0;
-    const pct=totalVotes?Math.round(votes/totalVotes*100):0;
-    const isWinner=isEnded&&i===winnerIdx; const isVoted=userVoted==i;
-    return `<div class="poll-option${isVoted?' voted':''}${isWinner?' winner':''}" data-idx="${i}" data-pollid="${pollId}">
-      <div class="poll-bar" style="width:${(userVoted!==undefined||isEnded)?pct:0}%"></div>
-      <span class="poll-option-text">${escapeHtml(opt)}${isWinner?' 🏆':''}</span>
-      <span class="poll-pct">${(userVoted!==undefined||isEnded)?pct+'%':''} <span style="color:#8e8e93">${votes}</span></span>
-    </div>`;
-  }).join('');
-  const timeLeft=isEnded?0:pollData.endsAt-Date.now();
-  card.innerHTML=`
-    <div class="poll-header"><span class="poll-badge">POLL</span><span class="poll-creator">${escapeHtml(pollData.creatorName)} (${escapeHtml(pollData.creatorId)})</span></div>
-    <div class="poll-question">${escapeHtml(pollData.question)}</div>
-    ${optionsHtml}
-    <div class="poll-footer"><span>🗳️ ${totalVotes} vote${totalVotes!==1?'s':''}</span><span>⏱ ${formatTimeLeft(timeLeft)}</span></div>
-    ${isEnded?`<div class="poll-ended-banner">🏆 Winner: "${escapeHtml(pollData.options[winnerIdx]||'?')}"</div>`:''}
-  `;
-  if(!isEnded&&userVoted===undefined){
-    card.querySelectorAll('.poll-option').forEach(optEl=>{
-      optEl.addEventListener('click',()=>castVote(pollId,parseInt(optEl.dataset.idx)));
-    });
-  }
-  messagesEl.appendChild(card);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
-  if(!activePollListeners[pollId]){
-    const pollRef=ref(db,'polls/'+currentRoom+'/'+pollId);
-    activePollListeners[pollId]=onValue(pollRef,snap=>{ const data=snap.val(); if(data) updatePollCard(document.getElementById('poll-'+pollId),data); });
-  }
-}
+                        <div id="ps-nav" style="display: flex; gap: 5px; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <button class="ps-nav-btn active" onclick="showPlayStoreTab('home')" data-tab="home">Home</button>
+                            <button class="ps-nav-btn" onclick="showPlayStoreTab('library')" data-tab="library">Library</button>
+                            <button class="ps-nav-btn" onclick="showPlayStoreTab('store')" data-tab="store">Store</button>
+                            <button class="ps-nav-btn" onclick="showPlayStoreTab('favorites')" data-tab="favorites">⭐ Favorites</button>
+                            <button class="ps-nav-btn" onclick="showPlayStoreTab('settings')" data-tab="settings">Settings</button>
+                        </div>
 
-function updatePollCard(card,pollData){
-  if(!card) return;
-  const pollId=card.id.replace('poll-','');
-  const isEnded=Date.now()>=pollData.endsAt;
-  const totalVotes=Object.values(pollData.votes||{}).reduce((a,b)=>a+b,0);
-  const userVoted=pollData.voters&&pollData.voters[myID];
-  const winnerIdx=isEnded?getWinnerIdx(pollData):-1;
-  const optionsHtml=pollData.options.map((opt,i)=>{
-    const votes=(pollData.votes&&pollData.votes[i])||0;
-    const pct=totalVotes?Math.round(votes/totalVotes*100):0;
-    const isWinner=isEnded&&i===winnerIdx; const isVoted=userVoted==i;
-    return `<div class="poll-option${isVoted?' voted':''}${isWinner?' winner':''}" data-idx="${i}" data-pollid="${pollId}">
-      <div class="poll-bar" style="width:${(userVoted!==undefined||isEnded)?pct:0}%"></div>
-      <span class="poll-option-text">${escapeHtml(opt)}${isWinner?' 🏆':''}</span>
-      <span class="poll-pct">${(userVoted!==undefined||isEnded)?pct+'%':''} <span style="color:#8e8e93">${votes}</span></span>
-    </div>`;
-  }).join('');
-  const timeLeft=isEnded?0:Math.max(0,pollData.endsAt-Date.now());
-  card.innerHTML=`
-    <div class="poll-header"><span class="poll-badge">POLL</span><span class="poll-creator">${escapeHtml(pollData.creatorName)} (${escapeHtml(pollData.creatorId)})</span></div>
-    <div class="poll-question">${escapeHtml(pollData.question)}</div>
-    ${optionsHtml}
-    <div class="poll-footer"><span>🗳️ ${totalVotes} vote${totalVotes!==1?'s':''}</span><span>⏱ ${formatTimeLeft(timeLeft)}</span></div>
-    ${isEnded?`<div class="poll-ended-banner">🏆 Winner: "${escapeHtml(pollData.options[winnerIdx]||'?')}"</div>`:''}
-  `;
-  if(!isEnded&&userVoted===undefined){
-    card.querySelectorAll('.poll-option').forEach(optEl=>{
-      optEl.addEventListener('click',()=>castVote(pollId,parseInt(optEl.dataset.idx)));
-    });
-  }
-}
+                        <div id="ps-content" style="flex: 1; overflow-y: auto; padding: 20px;">
 
-async function castVote(pollId,optionIdx){
-  if(!myID) return;
-  const pollRef=ref(db,'polls/'+currentRoom+'/'+pollId);
-  const snap=await get(pollRef); const data=snap.val();
-  if(!data) return;
-  if(Date.now()>=data.endsAt){ showWarning('This poll has ended!'); return; }
-  if(data.voters&&data.voters[myID]!==undefined){ showWarning('You already voted!'); return; }
-  const currentVotes=(data.votes&&data.votes[optionIdx])||0;
-  await update(pollRef,{ [`votes/${optionIdx}`]:currentVotes+1, [`voters/${myID}`]:optionIdx });
-}
+                            <!-- HOME TAB -->
+                            <div id="ps-tab-home" class="ps-tab active">
+                                <div id="ps-home-empty" style="display: none; text-align: center; padding: 60px 20px; color: #9aa0a6;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">🎮</div>
+                                    <h3 style="margin: 0 0 10px; font-weight: 500;">No Recent Games</h3>
+                                    <p style="margin: 0; font-size: 13px;">Install games from the Store tab to start playing!</p>
+                                </div>
+                                <div id="ps-home-content">
+                                    <div id="ps-featured-game" style="margin-bottom: 30px;"></div>
+                                    <div id="ps-recent-section" style="display: none;">
+                                        <h3 style="margin: 0 0 15px; font-size: 16px; font-weight: 500; color: #e8eaed;">Recent Play</h3>
+                                        <div id="ps-recent-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px;"></div>
+                                    </div>
+                                </div>
+                            </div>
 
-// ─── NAME SUBMIT — the single gate for ALL initialisation ────────────────────
-async function handleNameSubmit(e){
-  e?.preventDefault();
-  const n = nameInput.value.trim();
-  if(!n) return;
-  if(containsProfanity(n)){ alert('Name contains inappropriate language'); return; }
+                            <!-- LIBRARY TAB -->
+                            <div id="ps-tab-library" class="ps-tab" style="display: none;">
+                                <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">My Library</h3>
+                                <div id="ps-library-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px;"></div>
+                                <div id="ps-library-empty" style="display: none; text-align: center; padding: 60px 20px; color: #9aa0a6;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
+                                    <h3 style="margin: 0 0 10px; font-weight: 500;">Library Empty</h3>
+                                    <p style="margin: 0; font-size: 13px;">Install apps and games from the Store to see them here.</p>
+                                </div>
+                            </div>
 
-async function handleNameSubmit(e){ 
-  e?.preventDefault(); 
-  const n = nameInput.value.trim(); 
-  if(!n) return; 
-  if(containsProfanity(n)) {
-    alert('Name contains inappropriate language');
-    return;
-  }
-  username = n.slice(0, 32); 
-  myID = await getMyID(); 
-  
-  const premiumIDs = ["6528690208","3222695271","0376780508","0635354315","3293484597","9937301888","5069664537","1362852477","2126917941", "1683031661", "1164450983", "9999041312"];
-  if(premiumIDs.includes(myID)) createPollBtn.style.display = 'block'; 
-  
-  nameModal.remove(); 
-  loadMessages(currentRoom); 
-}
-  username = n.slice(0,32);
+                            <!-- STORE TAB -->
+                            <div id="ps-tab-store" class="ps-tab" style="display: none;">
+                                <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">Browse Store</h3>
+                                <div style="margin-bottom: 20px;">
+                                    <input type="text" id="ps-store-search" placeholder="Search games & apps..." onkeyup="filterPlayStoreGames()" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #e8eaed; font-size: 14px; outline: none; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                                    <span class="ps-category active" data-cat="all" onclick="filterStoreCategory('all')">All</span>
+                                    <span class="ps-category" data-cat="action" onclick="filterStoreCategory('action')">Action</span>
+                                    <span class="ps-category" data-cat="arcade" onclick="filterStoreCategory('arcade')">Arcade</span>
+                                    <span class="ps-category" data-cat="racing" onclick="filterStoreCategory('racing')">Racing</span>
+                                    <span class="ps-category" data-cat="sports" onclick="filterStoreCategory('sports')">Sports</span>
+                                    <span class="ps-category" data-cat="horror" onclick="filterStoreCategory('horror')">Horror</span>
+                                    <span class="ps-category" data-cat="rpg" onclick="filterStoreCategory('rpg')">RPG</span>
+                                    <span class="ps-category" data-cat="simulation" onclick="filterStoreCategory('simulation')">Simulation</span>
+                                    <span class="ps-category" data-cat="apps" onclick="filterStoreCategory('apps')">Apps</span>
+                                </div>
+                                <div id="ps-store-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px;"></div>
+                                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                    <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">📱 Apps</h3>
+                                    <div id="ps-apps-store-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px;"></div>
+                                    <div id="ps-apps-store-empty" style="display: none; text-align: center; padding: 40px 20px; color: #9aa0a6;">
+                                        <div style="font-size: 36px; margin-bottom: 10px;">📱</div>
+                                        <p style="margin: 0; font-size: 13px;">No apps found.</p>
+                                    </div>
+                                </div>
+                            </div>
 
-  // Disable button to prevent double-submit
-  nameSubmit.disabled = true;
-  nameSubmit.textContent = 'Connecting…';
+                            <!-- FAVORITES TAB -->
+                            <div id="ps-tab-favorites" class="ps-tab" style="display: none;">
+                                <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">⭐ Favorites</h3>
+                                <div id="ps-favorites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px;"></div>
+                                <div id="ps-favorites-empty" style="display: none; text-align: center; padding: 60px 20px; color: #9aa0a6;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">⭐</div>
+                                    <h3 style="margin: 0 0 10px; font-weight: 500;">No Favorites Yet</h3>
+                                    <p style="margin: 0; font-size: 13px;">Click the ⭐ button on any game or app to add it here.</p>
+                                </div>
+                            </div>
 
-  // 1. Resolve user ID (first real network call)
-  myID = await resolveUserID();
-  window.currentUserID = myID;
-  window.isPremium = OWNER_IDS.includes(myID);
+                            <!-- SETTINGS TAB -->
+                            <div id="ps-tab-settings" class="ps-tab" style="display: none;">
+                                <h3 style="margin: 0 0 20px; font-size: 18px; font-weight: 500;">Play Store Settings</h3>
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 15px;">
+                                    <h4 style="margin: 0 0 10px; font-size: 14px; color: #9aa0a6;">Data Usage</h4>
+                                    <p style="margin: 0; font-size: 13px;">Apps are installed locally in your browser storage.</p>
+                                </div>
+                                <button onclick="clearPlayStoreData()" style="background: rgba(234, 67, 53, 0.2); color: #ea4335; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 500; transition: 0.2s;">🗑️ Clear All Play Store Data</button>
+                            </div>
 
-  // 2. Initialise Firebase app for chat
-  app = initializeApp(firebaseConfig, "chatApp");
-  db  = getDatabase(app);
+                        </div>
 
-  // 3. Start ban system (second Firebase app + listener)
-  initBanSystem(myID);
+                        <!-- Detail Overlay (Game/App Modal) -->
+                        <div id="ps-detail-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #1a1a2e 0%, #0f0f23 100%); z-index: 100; transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); overflow-y: auto; padding: 30px; box-sizing: border-box;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                                <button onclick="closePlayStoreDetail()" style="background: rgba(255,255,255,0.1); border: none; color: #e8eaed; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s;">←</button>
+                                <span style="font-size: 16px; font-weight: 500; color: #e8eaed;">Back to Store</span>
+                            </div>
+                            <div id="ps-detail-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><div class="window" id="infinitecraft-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="infinitecraft-window-header"><span class="window-title">⚗️ Infinite Craft</span><div><button class="win-btn" onclick="minimizeApp('infinitecraft-window')">−</button><button class="win-btn" onclick="maximizeApp('infinitecraft-window')">□</button><button class="win-btn close-btn" onclick="closeApp('infinitecraft-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/infinitecraft.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="paperio-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="paperio-window-header"><span class="window-title">📄 Paper.io</span><div><button class="win-btn" onclick="minimizeApp('paperio-window')">−</button><button class="win-btn" onclick="maximizeApp('paperio-window')">□</button><button class="win-btn close-btn" onclick="closeApp('paperio-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/paperio.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="parkingfury-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="parkingfury-window-header"><span class="window-title">🅿️ Parking Fury</span><div><button class="win-btn" onclick="minimizeApp('parkingfury-window')">−</button><button class="win-btn" onclick="maximizeApp('parkingfury-window')">□</button><button class="win-btn close-btn" onclick="closeApp('parkingfury-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/parkingfury.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="granny3-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="granny3-window-header"><span class="window-title">👵 Granny 3</span><div><button class="win-btn" onclick="minimizeApp('granny3-window')">−</button><button class="win-btn" onclick="maximizeApp('granny3-window')">□</button><button class="win-btn close-btn" onclick="closeApp('granny3-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/granny3.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="fridaynightfunk-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="fridaynightfunk-window-header"><span class="window-title">🎤 Friday Night Funkin</span><div><button class="win-btn" onclick="minimizeApp('fridaynightfunk-window')">−</button><button class="win-btn" onclick="maximizeApp('fridaynightfunk-window')">□</button><button class="win-btn close-btn" onclick="closeApp('fridaynightfunk-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/FridayNightFunk.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="geometrydash-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="geometrydash-window-header"><span class="window-title">📐 Geometry Dash</span><div><button class="win-btn" onclick="minimizeApp('geometrydash-window')">−</button><button class="win-btn" onclick="maximizeApp('geometrydash-window')">□</button><button class="win-btn close-btn" onclick="closeApp('geometrydash-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Geo-Dash.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="discord-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="discord-window-header"><span class="window-title">💬 Discord</span><div><button class="win-btn" onclick="minimizeApp('discord-window')">−</button><button class="win-btn" onclick="maximizeApp('discord-window')">□</button><button class="win-btn close-btn" onclick="closeApp('discord-window')">✕</button></div></div><div class="window-content"><iframe data-src="Apps/Discord.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="echoflix-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="echoflix-window-header"><span class="window-title">🎬 EchoFlix</span><div><button class="win-btn" onclick="minimizeApp('echoflix-window')">−</button><button class="win-btn" onclick="maximizeApp('echoflix-window')">□</button><button class="win-btn close-btn" onclick="closeApp('echoflix-window')">✕</button></div></div><div class="window-content"><iframe data-src="Apps/EchoFlix.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="echomusic-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="echomusic-window-header"><span class="window-title">🎵 Echo Music</span><div><button class="win-btn" onclick="minimizeApp('echomusic-window')">−</button><button class="win-btn" onclick="maximizeApp('echomusic-window')">□</button><button class="win-btn close-btn" onclick="closeApp('echomusic-window')">✕</button></div></div><div class="window-content"><iframe data-src="Apps/EchoOS Music.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="smashcarts-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="smashcarts-window-header"><span class="window-title">🏎️ Smash Carts</span><div><button class="win-btn" onclick="minimizeApp('smashcarts-window')">−</button><button class="win-btn" onclick="maximizeApp('smashcarts-window')">□</button><button class="win-btn close-btn" onclick="closeApp('smashcarts-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/smash carts.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="eaglercraft-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="eaglercraft-window-header"><span class="window-title">⛏️ Eaglercraft</span><div><button class="win-btn" onclick="minimizeApp('eaglercraft-window')">−</button><button class="win-btn" onclick="maximizeApp('eaglercraft-window')">□</button><button class="win-btn close-btn" onclick="closeApp('eaglercraft-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Eaglercraft.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="fnae-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="fnae-window-header"><span class="window-title">🐻 Five Nights</span><div><button class="win-btn" onclick="minimizeApp('fnae-window')">−</button><button class="win-btn" onclick="maximizeApp('fnae-window')">□</button><button class="win-btn close-btn" onclick="closeApp('fnae-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Five Nights at Epstein's.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="granny-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="granny-window-header"><span class="window-title">👵 Granny</span><div><button class="win-btn" onclick="minimizeApp('granny-window')">−</button><button class="win-btn" onclick="maximizeApp('granny-window')">□</button><button class="win-btn close-btn" onclick="closeApp('granny-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Granny.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="escaperoad-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="escaperoad-window-header"><span class="window-title">🚗 Escape Road</span><div><button class="win-btn" onclick="minimizeApp('escaperoad-window')">−</button><button class="win-btn" onclick="maximizeApp('escaperoad-window')">□</button><button class="win-btn close-btn" onclick="closeApp('escaperoad-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Escape Road.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="escaperoad2-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="escaperoad2-window-header"><span class="window-title">🏎️ Escape Road 2</span><div><button class="win-btn" onclick="minimizeApp('escaperoad2-window')">−</button><button class="win-btn" onclick="maximizeApp('escaperoad2-window')">□</button><button class="win-btn close-btn" onclick="closeApp('escaperoad2-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Escape Road 2.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="solarsmash-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="solarsmash-window-header"><span class="window-title">🪐 Solar Smash</span><div><button class="win-btn" onclick="minimizeApp('solarsmash-window')">−</button><button class="win-btn" onclick="maximizeApp('solarsmash-window')">□</button><button class="win-btn close-btn" onclick="closeApp('solarsmash-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Solar Smash.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="brainrot-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="brainrot-window-header"><span class="window-title">🧠 Steal a Brainrot</span><div><button class="win-btn" onclick="minimizeApp('brainrot-window')">−</button><button class="win-btn" onclick="maximizeApp('brainrot-window')">□</button><button class="win-btn close-btn" onclick="closeApp('brainrot-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Steal a Brainrot.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="ragdollhit-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="ragdollhit-window-header"><span class="window-title">🥊 Ragdoll Hit</span><div><button class="win-btn" onclick="minimizeApp('ragdollhit-window')">−</button><button class="win-btn" onclick="maximizeApp('ragdollhit-window')">□</button><button class="win-btn close-btn" onclick="closeApp('ragdollhit-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Ragdoll Hit.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="ragdollarchers-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="ragdollarchers-window-header"><span class="window-title">🏹 Ragdoll Archers</span><div><button class="win-btn" onclick="minimizeApp('ragdollarchers-window')">−</button><button class="win-btn" onclick="maximizeApp('ragdollarchers-window')">□</button><button class="win-btn close-btn" onclick="closeApp('ragdollarchers-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Ragdoll Archers.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="99nights-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="99nights-window-header"><span class="window-title">🌲 99 Nights in the Forest</span><div><button class="win-btn" onclick="minimizeApp('99nights-window')">−</button><button class="win-btn" onclick="maximizeApp('99nights-window')">□</button><button class="win-btn close-btn" onclick="closeApp('99nights-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/99 Nights.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="rocketleague-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="rocketleague-window-header"><span class="window-title">⚽ Rocket League</span><div><button class="win-btn" onclick="minimizeApp('rocketleague-window')">−</button><button class="win-btn" onclick="maximizeApp('rocketleague-window')">□</button><button class="win-btn close-btn" onclick="closeApp('rocketleague-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Rocket League.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="bballrandom-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="bballrandom-window-header"><span class="window-title">🏀 Basketball Random</span><div><button class="win-btn" onclick="minimizeApp('bballrandom-window')">−</button><button class="win-btn" onclick="maximizeApp('bballrandom-window')">□</button><button class="win-btn close-btn" onclick="closeApp('bballrandom-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Basketball Random.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="bballbros-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="bballbros-window-header"><span class="window-title">🏀 Basketball Bros</span><div><button class="win-btn" onclick="minimizeApp('bballbros-window')">−</button><button class="win-btn" onclick="maximizeApp('bballbros-window')">□</button><button class="win-btn close-btn" onclick="closeApp('bballbros-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Basketball Bros.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="bballlegend-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="bballlegend-window-header"><span class="window-title">🏀 Basketball Legend</span><div><button class="win-btn" onclick="minimizeApp('bballlegend-window')">−</button><button class="win-btn" onclick="maximizeApp('bballlegend-window')">□</button><button class="win-btn close-btn" onclick="closeApp('bballlegend-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Basketball Legend.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="roblox-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="roblox-window-header"><span class="window-title">🟥 Roblox</span><div><button class="win-btn" onclick="minimizeApp('roblox-window')">−</button><button class="win-btn" onclick="maximizeApp('roblox-window')">□</button><button class="win-btn close-btn" onclick="closeApp('roblox-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Roblox.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="gtavice-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="gtavice-window-header"><span class="window-title">🚔 GTA III : Vice City</span><div><button class="win-btn" onclick="minimizeApp('gtavice-window')">−</button><button class="win-btn" onclick="maximizeApp('gtavice-window')">□</button><button class="win-btn close-btn" onclick="closeApp('gtavice-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/GTA-Vice.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="pixelfruits-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="pixelfruits-window-header"><span class="window-title">🍎 Pixel Fruits</span><div><button class="win-btn" onclick="minimizeApp('pixelfruits-window')">−</button><button class="win-btn" onclick="maximizeApp('pixelfruits-window')">□</button><button class="win-btn close-btn" onclick="closeApp('pixelfruits-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/PixelFruit.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="robloxanimator-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="robloxanimator-window-header"><span class="window-title">🎬 Roblox Animator V1.7</span><div><button class="win-btn" onclick="minimizeApp('robloxanimator-window')">−</button><button class="win-btn" onclick="maximizeApp('robloxanimator-window')">□</button><button class="win-btn close-btn" onclick="closeApp('robloxanimator-window')">✕</button></div></div><div class="window-content"><iframe data-src="Apps/Roblox Animator.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="aceattorney-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="aceattorney-window-header"><span class="window-title">⚖️ Ace Attorney</span><div><button class="win-btn" onclick="minimizeApp('aceattorney-window')">−</button><button class="win-btn" onclick="maximizeApp('aceattorney-window')">□</button><button class="win-btn close-btn" onclick="closeApp('aceattorney-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/aceattorney.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="callofduty-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="callofduty-window-header"><span class="window-title">🔫 Call of Duty</span><div><button class="win-btn" onclick="minimizeApp('callofduty-window')">−</button><button class="win-btn" onclick="maximizeApp('callofduty-window')">□</button><button class="win-btn close-btn" onclick="closeApp('callofduty-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/callofdutymodern.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="stateio-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="stateio-window-header"><span class="window-title">🗺️ State.io</span><div><button class="win-btn" onclick="minimizeApp('stateio-window')">−</button><button class="win-btn" onclick="maximizeApp('stateio-window')">□</button><button class="win-btn close-btn" onclick="closeApp('stateio-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/stateio.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="undertaleyellow-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="undertaleyellow-window-header"><span class="window-title">💛 Undertale Yellow</span><div><button class="win-btn" onclick="minimizeApp('undertaleyellow-window')">−</button><button class="win-btn" onclick="maximizeApp('undertaleyellow-window')">□</button><button class="win-btn close-btn" onclick="closeApp('undertaleyellow-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/undertaleyellow.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="yanderesim-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="yanderesim-window-header"><span class="window-title">🔪 Yandere Simulator</span><div><button class="win-btn" onclick="minimizeApp('yanderesim-window')">−</button><button class="win-btn" onclick="maximizeApp('yanderesim-window')">□</button><button class="win-btn close-btn" onclick="closeApp('yanderesim-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/yanderesim.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="doodlejump-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="doodlejump-window-header"><span class="window-title">🐰 Doodle Jump</span><div><button class="win-btn" onclick="minimizeApp('doodlejump-window')">−</button><button class="win-btn" onclick="maximizeApp('doodlejump-window')">□</button><button class="win-btn close-btn" onclick="closeApp('doodlejump-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/DoodleJump.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="drivingsimulator-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="drivingsimulator-window-header"><span class="window-title">🚗 Driving Simulator</span><div><button class="win-btn" onclick="minimizeApp('drivingsimulator-window')">−</button><button class="win-btn" onclick="maximizeApp('drivingsimulator-window')">□</button><button class="win-btn close-btn" onclick="closeApp('drivingsimulator-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/Driving Simulator.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="effingzombies-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="effingzombies-window-header"><span class="window-title">🧟 Effing Zombies</span><div><button class="win-btn" onclick="minimizeApp('effingzombies-window')">−</button><button class="win-btn" onclick="maximizeApp('effingzombies-window')">□</button><button class="win-btn close-btn" onclick="closeApp('effingzombies-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/effing zombies.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="granny2-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="granny2-window-header"><span class="window-title">👵 Granny 2</span><div><button class="win-btn" onclick="minimizeApp('granny2-window')">−</button><button class="win-btn" onclick="maximizeApp('granny2-window')">□</button><button class="win-btn close-btn" onclick="closeApp('granny2-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/granny2.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="pokemon-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="pokemon-window-header"><span class="window-title">⚡ Pokemon</span><div><button class="win-btn" onclick="minimizeApp('pokemon-window')">−</button><button class="win-btn" onclick="maximizeApp('pokemon-window')">□</button><button class="win-btn close-btn" onclick="closeApp('pokemon-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/pokemon-wip.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="1v1lol-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="1v1lol-window-header"><span class="window-title">🔫 1v1.LOL</span><div><button class="win-btn" onclick="minimizeApp('1v1lol-window')">−</button><button class="win-btn" onclick="maximizeApp('1v1lol-window')">□</button><button class="win-btn close-btn" onclick="closeApp('1v1lol-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/1v1 LOL.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div>
+        <div class="window" id="bitlife-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="bitlife-window-header"><span class="window-title">📱 Bitlife</span><div><button class="win-btn" onclick="minimizeApp('bitlife-window')">−</button><button class="win-btn" onclick="maximizeApp('bitlife-window')">□</button><button class="win-btn close-btn" onclick="closeApp('bitlife-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/bitlife.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+        <div class="window" id="footballbros-window" style="display: none; width: 800px; height: 600px;"><div class="window-header" id="footballbros-window-header"><span class="window-title">🏈 Football Bros</span><div><button class="win-btn" onclick="minimizeApp('footballbros-window')">−</button><button class="win-btn" onclick="maximizeApp('footballbros-window')">□</button><button class="win-btn close-btn" onclick="closeApp('footballbros-window')">✕</button></div></div><div class="window-content"><iframe data-src="Games/football-bros.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe></div></div>
+<div class="window" id="linkcreator-window" style="display: none; width: 600px; height: 500px;">
+            <div class="window-header" id="linkcreator-window-header">
+                <span class="window-title">🔗 Link Creator</span>
+                <div>
+                    <button class="win-btn" onclick="minimizeApp('linkcreator-window')">−</button>
+                    <button class="win-btn" onclick="maximizeApp('linkcreator-window')">□</button>
+                    <button class="win-btn close-btn" onclick="closeApp('linkcreator-window')">✕</button>
+                </div>
+            </div>
+            <div class="window-content" style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                <p style="margin: 0; color: var(--sys-text-muted); font-size: 13px;">Create custom shareable links for your favorite sites.</p>
+                <input type="text" id="lc-url" placeholder="Enter URL (e.g., https://example.com)" class="modern-input" style="margin-bottom: 0;">
+                <input type="text" id="lc-title" placeholder="Link Title (optional)" class="modern-input" style="margin-bottom: 0;">
+                <button onclick="generateLink()" class="modern-btn">✨ Generate Link</button>
+                <div id="lc-result" style="display: none; background: rgba(128,128,128,0.05); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--sys-border);">
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: var(--sys-text-muted);">Your link:</p>
+                    <input type="text" id="lc-output" readonly style="width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--sys-border); background: rgba(128,128,128,0.05); color: var(--sys-text); font-family: monospace; font-size: 12px; box-sizing: border-box;">
+                    <button onclick="copyLink()" class="modern-btn" style="margin-top: 10px; font-size: 12px;">📋 Copy</button>
+                </div>
+                <div id="lc-history" style="margin-top: 10px;">
+                    <p style="font-size: 11px; font-weight: 600; color: var(--sys-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">History</p>
+                    <div id="lc-history-list" style="display: flex; flex-direction: column; gap: 5px; max-height: 120px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
 
-  // 4. Fetch geo (non-blocking, best-effort)
-  fetch('https://get.geojs.io/v1/ip/geo.json')
-    .then(r=>r.json())
-    .then(d=>{ userGeoData={ city:d.city||'', state:d.region||'', country:d.country||'', cc:d.country_code||'' }; })
-    .catch(()=>{});
+    <div id="notification-toast-container"></div>
 
-  // 5. Show poll button for premium users
-  if(PREMIUM_IDS.includes(myID)) createPollBtn.style.display='block';
-
-  // 6. Remove modal and load chat
-  nameModal.remove();
-  loadMessages(currentRoom);
-}
-
-// ─── POLL MODAL WIRING ────────────────────────────────────────────────────────
-addOptionBtn.onclick=()=>{
-  const c=pollOptionsEl.children.length+1;
-  if(c<=8){
-    const row=document.createElement('div'); row.className='option-row';
-    row.innerHTML=`<input placeholder="Option ${c}" class="poll-opt-input"/><button class="remove-opt-btn">✕</button>`;
-    row.querySelector('button').onclick=()=>{ if(pollOptionsEl.children.length>2) row.remove(); else showWarning('Need at least 2 options'); };
-    pollOptionsEl.appendChild(row);
-  }
-};
-
-pollOptionsEl.querySelectorAll('.remove-opt-btn').forEach(btn=>{
-  btn.onclick=()=>{ if(pollOptionsEl.children.length>2) btn.closest('.option-row').remove(); else showWarning('Need at least 2 options'); };
-});
-
-cancelPollBtn.onclick=()=>pollModal.style.display='none';
-
-submitPollBtn.onclick=async()=>{
-  const q=pollQuestion.value.trim(); if(!q){ showWarning('Enter a question'); return; }
-  const opts=Array.from(document.querySelectorAll('.poll-opt-input')).map(i=>i.value.trim()).filter(Boolean);
-  if(opts.length<2){ showWarning('Need at least 2 options'); return; }
-  const dur=(parseInt(pollDuration.value)||5)*(parseInt(pollDurationUnit.value));
-  const pollRef=await push(ref(db,'polls/'+currentRoom),{
-    question:q, options:opts, creatorId:myID, creatorName:username,
-    createdAt:Date.now(), endsAt:Date.now()+dur, votes:{}, voters:{}
-  });
-  await push(ref(db,'messages/'+currentRoom),{
-    name:username, id:myID, text:`📊 Poll: ${q}`, timestamp:Date.now(), isPoll:true, pollId:pollRef.key, geo:userGeoData
-  });
-  pollModal.style.display='none'; pollQuestion.value='';
-  pollOptionsEl.innerHTML='';
-  ['Option 1','Option 2'].forEach((ph,idx)=>{
-    const row=document.createElement('div'); row.className='option-row';
-    row.innerHTML=`<input placeholder="${ph}" class="poll-opt-input"/><button class="remove-opt-btn">✕</button>`;
-    row.querySelector('button').onclick=()=>{ if(pollOptionsEl.children.length>2) row.remove(); };
-    pollOptionsEl.appendChild(row);
-  });
-  pollDuration.value='5';
-};
-
-createPollBtn.onclick=()=>{ pollModal.style.display='flex'; };
-
-// ─── INPUT EVENTS ─────────────────────────────────────────────────────────────
-msgInput.addEventListener('input', updateCharCounter);
-sendBtn.addEventListener('click', sendMessage);
-msgInput.addEventListener('keypress', e=>{ if(e.key==='Enter') sendMessage(); });
-
-// ─── ROOM BUTTONS ─────────────────────────────────────────────────────────────
-publicRoomBtn.onclick=()=>switchRoom('public');
-
-createRoomBtn.onclick=()=>{
-  const r=prompt("Enter new room name:")?.trim();
-  if(r){
-    if(r==='public'){ showWarning('Cannot create a room named "public"'); return; }
-    if(containsProfanity(r)){ showWarning('Room name contains inappropriate language'); return; }
-    if(!joinedRooms.has(r)){ joinedRooms.add(r); refreshJoinedRoomsUI(); }
-    switchRoom(r);
-  }
-};
-
-joinRoomBtn.onclick=()=>{
-  const r=prompt("Enter room name to join:")?.trim();
-  if(r){
-    if(!joinedRooms.has(r)){ joinedRooms.add(r); refreshJoinedRoomsUI(); }
-    switchRoom(r);
-  }
-};
-
-// ─── NAME MODAL EVENTS ────────────────────────────────────────────────────────
-nameSubmit.addEventListener('click', handleNameSubmit);
-nameInput.addEventListener('keydown', e=>e.key==='Enter'&&handleNameSubmit(e));
-setTimeout(()=>nameInput.focus(), 100);
-
-// Signal to parent that Echo Chat is ready
-if (window.parent !== window) {
-  window.parent.postMessage({ type: 'echo-chat-ready' }, '*');
-}
+    <div id="launcher-menu" style="display: none;">
+        <div class="launcher-search-box">
+            <span>🔍</span><input type="text" id="launcher-search" placeholder="Search your device, apps, web..." onkeyup="filterLauncher()">
+        </div>
+        <div id="launcher-recent" style="display: none; margin-bottom: 15px;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--sys-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; padding: 0 10px;">Continue where you left off</div>
+            <div class="launcher-grid" id="launcher-recent-list" style="display: flex; flex-direction: row; gap: 15px; padding: 0 10px; overflow-x: auto;"></div>
+        </div>
+    </div>
+        <div class="launcher-grid" id="launcher-list">
+            <div class="launcher-item" data-app-id="chrome-window" data-icon="🌐" data-name="Chrome" onclick="openApp('chrome-window')"><div class="l-icon">🌐</div><span class="l-text">Chrome</span></div>
+            <div class="launcher-item" data-app-id="store-window" data-icon="🛍️" data-name="Play Store" onclick="openApp('store-window')"><div class="l-icon">🛍️</div><span class="l-text">Play Store</span></div>
+            <div class="launcher-item" data-app-id="settings-window" data-icon="⚙️" data-name="Settings" onclick="openApp('settings-window')"><div class="l-icon">⚙️</div><span class="l-text">Settings</span></div>
+            <div class="launcher-item" data-app-id="wordpad-window" data-icon="📝" data-name="Wordpad" onclick="openApp('wordpad-window')"><div class="l-icon">📝</div><span class="l-text">Wordpad</span></div>
+            <div class="launcher-item" data-app-id="calc-window" data-icon="🧮" data-name="Calculator" onclick="openApp('calc-window')"><div class="l-icon">🧮</div><span class="l-text">Calculator</span></div>
+            <div class="launcher-item" data-app-id="files-window" data-icon="📁" data-name="Files" onclick="openApp('files-window')"><div class="l-icon">📁</div><span class="l-text">Files</span></div>
+            <div class="launcher-item" data-app-id="robloxanimator-window" data-icon="🎬" data-name="Roblox Animator V1.7" onclick="openApp('robloxanimator-window')"><div class="l-icon">🎬</div><span class="l-text">Roblox Animator V1.7</span></div>
+            <div class="launcher-item" data-app-id="linkcreator-window" data-icon="🔗" data-name="Link Creator" onclick="openApp('linkcreator-window')"><div class="l-icon">🔗</div><span class="l-text">Link Creator</span></div>
+            <div class="launcher-item" data-app-id="granny2-window" data-icon="👵" data-name="Granny 2" onclick="openApp('granny2-window')"><div class="l-icon">👵</div><span class="l-text">Granny 2</span></div>
+            <div class="launcher-item" data-app-id="pokemon-window" data-icon="⚡" data-name="Pokemon" onclick="openApp('pokemon-window')"><div class="l-icon">⚡</div><span class="l-text">Pokemon</span></div>
+            <div class="launcher-item" data-app-id="1v1lol-window" data-icon="🔫" data-name="1v1.LOL" onclick="openApp('1v1lol-window')"><div class="l-icon">🔫</div><span class="l-text">1v1.LOL</span></div>
+            <div class="launcher-item" data-app-id="bitlife-window" data-icon="📱" data-name="Bitlife" onclick="openApp('bitlife-window')"><div class="l-icon">📱</div><span class="l-text">Bitlife</span></div>
+            <div class="launcher-item" data-app-id="footballbros-window" data-icon="🏈" data-name="Football Bros" onclick="openApp('footballbros-window')"><div class="l-icon">🏈</div><span class="l-text">Football Bros</span></div>
 
 
-// Listen for messages from parent (Echo OS)
-window.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'echo-os-open-chat') {
-    const senderId = event.data.senderId;
-    // Switch to DM room with this user if it exists, or create it
-    const dmRoom = `dm_${[myID, senderId].sort().join('_')}`;
-    if (!joinedRooms.has(dmRoom)) {
-      joinedRooms.add(dmRoom);
-      refreshJoinedRoomsUI();
-    }
-    switchRoom(dmRoom);
-  }
-});
-</script>
+        </div>
+    </div>
+
+    <div id="media-control-modal">
+        <div class="media-modal-header">
+            <div class="media-modal-art" id="media-modal-art"></div>
+            <div class="media-modal-info">
+                <div class="track-name" id="media-modal-track">Not Playing</div>
+                <div class="artist-name" id="media-modal-artist">Echo Music</div>
+            </div>
+        </div>
+        <div class="media-progress-bar" id="media-progress-bar" onclick="seekMedia(event)">
+            <div class="media-progress-fill" id="media-progress-fill"></div>
+        </div>
+        <div class="media-time-display">
+            <span id="media-time-cur">0:00</span>
+            <span id="media-time-dur">0:00</span>
+        </div>
+        <div class="media-modal-controls">
+            <button class="media-modal-btn" onclick="mediaPrev()" title="Previous">⏮</button>
+            <button class="media-modal-btn play-pause" id="media-play-btn" onclick="mediaTogglePlay()" title="Play/Pause">▶</button>
+            <button class="media-modal-btn" onclick="mediaNext()" title="Next">⏭</button>
+        </div>
+    </div>
+
+    <div id="quick-settings" style="display: none;">
+        <div id="qs-notifications">
+            <div class="qs-notif-header">Notifications</div>
+            <div id="qs-notif-list"><div class="qs-no-notifs">No new notifications</div></div>
+        </div>
+        <div class="qs-pills-grid">
+            <div class="qs-pill active"><div class="qs-icon">📶</div><span>Wi-Fi</span></div>
+            <div class="qs-pill"><div class="qs-icon">ᛒ</div><span>Bluetooth</span></div>
+            <div class="qs-pill" id="theme-toggle-btn" onclick="toggleTheme()"><div class="qs-icon">🌗</div><span id="theme-text">Dark Theme</span></div>
+            <div class="qs-pill" id="battery-saver-btn" onclick="toggleBatterySaver()"><div class="qs-icon">🔋</div><span>Battery Saver</span></div>
+        </div>
+        <div class="qs-sliders">
+            <div class="slider-row"><span>☀️</span><input type="range" id="brightness-slider" min="30" max="100" value="100"></div>
+            <div class="slider-row"><span>🔊</span><input type="range" min="0" max="100" value="70"></div>
+        </div>
+        <div class="qs-footer">
+            <div class="qs-battery-info"><span id="qs-battery-icon">🔋</span> <span id="qs-battery-text">100%</span></div>
+            <div class="qs-actions">
+                <button onclick="openApp('settings-window'); toggleQuickSettings();" title="Settings">⚙️</button>
+                <button onclick="lockSystem()" title="Lock">🔒</button>
+                <button onclick="location.reload()" title="Power off">⏻</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="taskbar-container">
+        <div id="taskbar">
+            <button id="launcher-btn" onclick="toggleMenu()"><div class="launcher-dot"></div></button>
+            <div id="desk-indicator">
+                <span id="current-desk-name">Desk 1</span>
+                <button id="desk-prev" onclick="event.stopPropagation(); switchToPrevDesk()" title="Previous Desk">‹</button>
+                <button id="desk-next" onclick="event.stopPropagation(); switchToNextDesk()" title="Next Desk">›</button>
+                <button id="desk-add" onclick="event.stopPropagation(); addNewDesk()" title="New Desk">+</button>
+            </div>
+            <button id="desk-add-quick" onclick="event.stopPropagation(); addNewDesk();" title="New Desk">+</button>
+            <div id="app-icons">
+                <button class="app-icon" id="taskbar-chrome-window" draggable="true" onclick="toggleApp('chrome-window')" title="Chrome">🌐</button>
+                <button class="app-icon" id="taskbar-store-window" draggable="true" onclick="toggleApp('store-window')" title="Play Store">🛍️</button>
+                <button class="app-icon" id="taskbar-settings-window" draggable="true" onclick="toggleApp('settings-window')" title="Settings">⚙️</button>
+                <button class="app-icon" id="taskbar-wordpad-window" draggable="true" onclick="toggleApp('wordpad-window')" title="Wordpad">📝</button>
+                <button class="app-icon" id="taskbar-calc-window" draggable="true" onclick="toggleApp('calc-window')" title="Calculator">🧮</button>
+                <button class="app-icon" id="taskbar-files-window" draggable="true" onclick="toggleApp('files-window')" title="Files">📁</button>
+            </div>
+            <button id="media-control-btn" onclick="toggleMediaModal()" title="Media Controls">
+                <div class="media-wave"></div>
+                <span class="media-icon">🎵</span>
+            </button>
+            <div id="calendar-widget" onclick="toggleCalendar()">
+                <div id="calendar-day">30</div>
+                <div id="calendar-date">Mar</div>
+            </div>
+            <div id="status-area" onclick="toggleQuickSettings()">
+                <div class="status-icons"><span>📶</span><span id="taskbar-battery">🔋</span></div>
+                <div id="clock">12:00</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
