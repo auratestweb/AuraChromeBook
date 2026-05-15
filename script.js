@@ -282,8 +282,7 @@ function initializeDesktopWithAccount() {
                 lockScreen.style.display = 'flex';
             }
         } else {
-            showUpdateModal();
-            triggerInitialNotifications();
+            showCreatorScreen();
         }
     }
 }
@@ -1194,8 +1193,7 @@ window.onload = function() {
                 const lockScreen = document.getElementById('lock-screen');
                 if (lockScreen) lockScreen.style.display = 'flex';
             } else {
-                showUpdateModal();
-                triggerInitialNotifications();
+                showCreatorScreen();
             }
         }
     }, 2500);
@@ -1670,8 +1668,21 @@ const PS_APPS = {
     'calc-window': { id: 'calc-window', name: 'Calculator', icon: '🧮', category: 'productivity', rating: 4.6, banner: 'https://images.unsplash.com/photo-1587145820266-a5951eebe0e3?q=80&w=800', desc: 'Standard calculator for quick math.', controls: 'Mouse and keyboard' },
     'settings-window': { id: 'settings-window', name: 'Settings', icon: '⚙️', category: 'system', rating: 5.0, banner: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=800', desc: 'Configure your Echo OS experience.', controls: 'Mouse and keyboard' },
     'robloxanimator-window': { id: 'robloxanimator-window', name: 'Roblox Animator', icon: '🎬', category: 'creative', rating: 4.5, banner: 'https://images.unsplash.com/photo-1616499370260-485b3e5ed653?q=80&w=800', desc: 'Create Roblox animations.', controls: 'Mouse and keyboard' },
-    'linkcreator-window': { id: 'linkcreator-window', name: 'Link Creator', icon: '🔗', category: 'productivity', rating: 4.3, banner: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=800', desc: 'Create and share custom links.', controls: 'Mouse and keyboard' }
+    'linkcreator-window': { id: 'linkcreator-window', name: 'Link Creator', icon: '🔗', category: 'productivity', rating: 4.3, banner: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=800', desc: 'Create and share custom links.', controls: 'Mouse and keyboard' },
+    'echochat-window': { id: 'echochat-window', name: 'Echo Chat', icon: '💬', category: 'social', rating: 4.9, banner: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=800', desc: 'Chat with friends and communities in real-time with DM notifications.', controls: 'Mouse and keyboard' }
 };
+// Pre-installed apps (built into Echo OS, always available)
+const PRE_INSTALLED_APPS = [
+    'chrome-window', 'store-window', 'settings-window', 'wordpad-window', 
+    'calc-window', 'files-window', 'echochat-window', 'linkcreator-window'
+];
+
+function isAppInstalled(appId) {
+    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
+    const installedIds = installed.map(a => a.id);
+    return installedIds.includes(appId) || PRE_INSTALLED_APPS.includes(appId);
+}
+
 
 // Play time tracking (stored per account)
 function getPlayTimeData() {
@@ -1756,14 +1767,12 @@ function renderPlayStoreSidebar() {
     const appList = document.getElementById('ps-app-list');
     if (!gameList) return;
 
-    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
-    const installedIds = installed.map(a => a.id);
     const recent = getRecentPlays();
 
     // Render games
     let gamesHtml = '';
     Object.values(PS_GAMES).forEach(game => {
-        const isInstalled = installedIds.includes(game.id);
+        const isInstalled = isAppInstalled(game.id);
         const isActive = recent.length > 0 && recent[0] === game.id;
         gamesHtml += `<div class="ps-game-item ${isActive ? 'active' : ''}" onclick="openPlayStoreDetail('${game.id}', 'game')">
             <div class="ps-game-icon">${game.icon}</div>
@@ -1776,7 +1785,7 @@ function renderPlayStoreSidebar() {
     if (appList) {
         let appsHtml = '';
         Object.values(PS_APPS).forEach(app => {
-            const isInstalled = installedIds.includes(app.id);
+            const isInstalled = isAppInstalled(app.id);
             appsHtml += `<div class="ps-game-item" onclick="openPlayStoreDetail('${app.id}', 'app')">
                 <div class="ps-game-icon">${app.icon}</div>
                 <span>${app.name} ${isInstalled ? '✓' : ''}</span>
@@ -2003,8 +2012,16 @@ function renderPlayStoreStore() {
 function installPlayStoreGame(appId, icon, name) {
     const launcherList = document.getElementById('launcher-list');
     const existingItem = launcherList ? launcherList.querySelector(`[data-app-id="${appId}"]`) : null;
+
+    // Check if it's a pre-installed app
+    if (PRE_INSTALLED_APPS.includes(appId)) {
+        notificationMgr.showNotification({ title: "Pre-installed", message: `${name} is already built into Echo OS.`, icon: "sparkles" });
+        openApp(appId);
+        return;
+    }
+
     if (existingItem) {
-        notificationMgr.showNotification({ title: "Already Installed", message: `${name} is already installed.`, icon: "sparkles" });
+        notificationMgr.showNotification({ title: "Already Installed", message: `${name} is already in your launcher.`, icon: "sparkles" });
         return;
     }
 
@@ -2021,6 +2038,7 @@ function installPlayStoreGame(appId, icon, name) {
         renderPlayStoreSidebar();
         renderPlayStoreLibrary();
         renderPlayStoreStore();
+        renderPlayStoreApps();
     }, 1000);
 }
 
@@ -2075,8 +2093,6 @@ function renderPlayStoreFavorites() {
     if (!grid) return;
 
     const favs = getFavorites();
-    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
-    const installedIds = installed.map(a => a.id);
 
     if (favs.length === 0) {
         grid.style.display = 'none';
@@ -2092,7 +2108,7 @@ function renderPlayStoreFavorites() {
         const app = PS_APPS[appId];
         const item = game || app;
         if (!item) return '';
-        const isInstalled = installedIds.includes(appId);
+        const isInstalled = isAppInstalled(appId);
         return `<div class="ps-store-card" onclick="openPlayStoreDetail('${appId}', '${game ? 'game' : 'app'}')">
             <div class="card-icon">${item.icon}</div>
             <div class="card-title">${item.name}</div>
@@ -2296,8 +2312,7 @@ function openPlayStoreDetail(itemId, type) {
     const item = isGame ? PS_GAMES[itemId] : PS_APPS[itemId];
     if (!item) return;
 
-    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
-    const isInstalled = installed.find(a => a.id === itemId);
+    const isInstalled = isAppInstalled(itemId);
 
     // Get playtime data
     const playTimeData = getPlayTimeData();
@@ -2359,8 +2374,21 @@ function closePlayStoreDetail() {
 function installPlayStoreItem(appId, icon, name, type) {
     const launcherList = document.getElementById('launcher-list');
     const existingItem = launcherList ? launcherList.querySelector(`[data-app-id="${appId}"]`) : null;
+
+    // Check if it's a pre-installed app
+    if (PRE_INSTALLED_APPS.includes(appId)) {
+        notificationMgr.showNotification({ title: "Pre-installed", message: `${name} is already built into Echo OS.`, icon: "sparkles" });
+        openApp(appId);
+        // Refresh detail view if open
+        const overlay = document.getElementById('ps-detail-overlay');
+        if (overlay && overlay.style.transform === 'translateX(0px)') {
+            openPlayStoreDetail(appId, type);
+        }
+        return;
+    }
+
     if (existingItem) {
-        notificationMgr.showNotification({ title: "Already Installed", message: `${name} is already installed.`, icon: "sparkles" });
+        notificationMgr.showNotification({ title: "Already Installed", message: `${name} is already in your launcher.`, icon: "sparkles" });
         return;
     }
 
@@ -2412,6 +2440,27 @@ renderPlayStoreStore = function() {
     });
 
     grid.innerHTML = html;
+
+    // Render apps in separate apps grid
+    const appsGrid = document.getElementById('ps-apps-store-grid');
+    if (appsGrid) {
+        let appsHtml = '';
+        Object.values(PS_APPS).forEach(app => {
+            const isInstalled = installedIds.includes(app.id);
+            appsHtml += `<div class="ps-store-card" data-category="apps" onclick="openPlayStoreDetail('${app.id}', 'app')">
+                <div class="card-icon">${app.icon}</div>
+                <div class="card-title">${app.name}</div>
+                <div class="card-meta">${app.category} • ⭐${app.rating}</div>
+                <div class="install-overlay">
+                    ${isInstalled 
+                        ? `<button onclick="event.stopPropagation(); openApp('${app.id}')">▶ Open</button>`
+                        : `<button onclick="event.stopPropagation(); installPlayStoreGame('${app.id}', '${app.icon}', '${app.name}')">⬇ Install</button>`
+                    }
+                </div>
+            </div>`;
+        });
+        appsGrid.innerHTML = appsHtml;
+    }
 };
 
 // Override renderPlayStoreHome to make recent games clickable
@@ -2438,11 +2487,13 @@ renderPlayStoreHome = function() {
         recentSection.style.display = 'block';
         recentGrid.innerHTML = recent.slice(1).map(appId => {
             const game = PS_GAMES[appId];
-            if (!game) return '';
-            return `<div class="ps-store-card" onclick="openPlayStoreDetail('${appId}', 'game')">
-                <div class="card-icon">${game.icon}</div>
-                <div class="card-title">${game.name}</div>
-                <div class="card-meta">${game.category} • ⭐${game.rating}</div>
+            const app = PS_APPS[appId];
+            const item = game || app;
+            if (!item) return '';
+            return `<div class="ps-store-card" onclick="openPlayStoreDetail('${appId}', '${game ? 'game' : 'app'}')">
+                <div class="card-icon">${item.icon}</div>
+                <div class="card-title">${item.name}</div>
+                <div class="card-meta">${item.category} • ⭐${item.rating}</div>
             </div>`;
         }).join('');
     }
@@ -2455,7 +2506,19 @@ renderPlayStoreLibrary = function() {
     const empty = document.getElementById('ps-library-empty');
     if (!grid) return;
 
-    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
+    // Combine installed apps with pre-installed apps
+    let installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
+
+    // Add pre-installed apps that aren't already in the list
+    PRE_INSTALLED_APPS.forEach(appId => {
+        const game = PS_GAMES[appId];
+        const app = PS_APPS[appId];
+        const item = game || app;
+        if (item && !installed.find(a => a.id === appId)) {
+            installed.push({ id: appId, icon: item.icon, name: item.name, pinned: true });
+        }
+    });
+
     const playTimeData = getPlayTimeData();
 
     if (installed.length === 0) {
