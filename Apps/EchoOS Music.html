@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Echo OS Music System</title>
-    <script src="https://unpkg.com/browser-id3-writer@4.4.0/dist/browser-id3-writer.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -17,6 +16,7 @@
             --text-dim: #708090;
             --danger: #ff4757;
             --success: #2ed573;
+            --warning: #ffa502;
         }
 
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
@@ -45,7 +45,6 @@
             will-change: background-image;
         }
 
-        /* ===== SIDEBAR ===== */
         #sidebar {
             width: 380px; background: rgba(2, 4, 10, 0.85);
             backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
@@ -57,7 +56,6 @@
         .sidebar-header h2 { font-weight: 800; letter-spacing: -1px; margin: 0; font-size: 1.5rem; color: var(--accent); }
         .sidebar-header p { font-size: 0.7rem; color: var(--accent); margin: 5px 0 0; }
 
-        /* Tabs */
         .sidebar-tabs {
             display: flex; padding: 0 20px; gap: 8px; margin-bottom: 10px;
         }
@@ -88,7 +86,6 @@
             letter-spacing: 0.5px; opacity: 0.6;
         }
 
-        /* ===== MAIN PLAYER ===== */
         main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
 
         #art-zone {
@@ -111,7 +108,6 @@
         .lyric-line { font-size: 1.6rem; font-weight: 700; color: rgba(255,255,255,0.2); margin: 25px 0; transition: 0.4s; }
         .lyric-line.active { color: var(--accent); transform: scale(1.1); text-shadow: 0 0 15px rgba(0, 210, 255, 0.5); }
 
-        /* Controls */
         .player-controls { width: 100%; max-width: 500px; }
         input[type="range"] { 
             width: 100%; accent-color: var(--accent); height: 5px; cursor: pointer; 
@@ -134,18 +130,15 @@
         }
         .btn-t9.secondary:hover { border-color: var(--accent); }
 
-        /* Lyric Mode */
         body.lyric-mode #art-zone { width: 100px; height: 100px; margin-bottom: 20px; }
         body.lyric-mode .track-meta h1 { font-size: 1.5rem; }
 
-        /* ===== OVERLAYS ===== */
         .overlay { 
             position: fixed; inset: 0; background: rgba(2,4,10,0.95); z-index: 100; 
             display: none; padding: 40px; flex-direction: column; overflow-y: auto;
         }
         .overlay.active { display: flex; }
 
-        /* Search Overlay */
         .search-header { max-width: 900px; margin: 0 auto; width: 100%; }
         .search-filters {
             display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap;
@@ -200,8 +193,8 @@
             padding: 4px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 800;
             text-transform: uppercase;
         }
-        .result-card .source-badge.spotify { background: #1DB954; color: white; }
-        .result-card .source-badge.soundcloud { background: #ff5500; color: white; }
+        .result-card .source-badge.itunes { background: #fc3c44; color: white; }
+        .result-card .source-badge.jamendo { background: #00aaff; color: white; }
         .result-card .card-title {
             font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             font-size: 0.9rem; margin-bottom: 4px;
@@ -219,7 +212,6 @@
         }
         .result-card .card-actions button:hover { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
 
-        /* Category Grid */
         .category-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 15px; margin-top: 20px; max-width: 900px; margin-left: auto; margin-right: auto;
@@ -236,7 +228,6 @@
         .category-card span { position: relative; z-index: 2; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
         .category-card:hover { transform: scale(1.05); border-color: var(--accent); }
 
-        /* Playlist Overlay */
         .playlist-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px; margin-top: 30px; max-width: 900px; margin-left: auto; margin-right: auto;
@@ -263,7 +254,6 @@
         .playlist-card .pl-actions button:hover { background: var(--danger); color: white; border-color: var(--danger); }
         .playlist-card .pl-actions button.play-btn:hover { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
 
-        /* Modal */
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
             display: none; align-items: center; justify-content: center;
@@ -283,15 +273,41 @@
         .modal-box .modal-actions { display: flex; gap: 10px; }
         .modal-box .modal-actions button { flex: 1; }
 
-        /* Scrollbar */
+        .loading-spinner {
+            width: 40px; height: 40px; border: 3px solid var(--glass-border);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .api-status {
+            position: fixed; top: 20px; right: 20px; z-index: 300;
+            padding: 10px 20px; border-radius: 10px; font-size: 0.75rem;
+            font-weight: 600; display: none; backdrop-filter: blur(10px);
+        }
+        .api-status.online { background: rgba(46, 213, 115, 0.2); color: var(--success); border: 1px solid var(--success); display: block; }
+        .api-status.offline { background: rgba(255, 71, 87, 0.2); color: var(--danger); border: 1px solid var(--danger); display: block; }
+        .api-status.warning { background: rgba(255, 165, 2, 0.2); color: var(--warning); border: 1px solid var(--warning); display: block; }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-        /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.4s ease-out; }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--bg-dark); border: 1px solid var(--glass-border); border-radius: 12px;
+            padding: 15px 25px; z-index: 400; font-size: 0.85rem; font-weight: 600;
+            transition: transform 0.3s ease; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.info { border-color: var(--accent); color: var(--accent); }
     </style>
 <base target="_blank">
 </head>
@@ -299,8 +315,9 @@
 
     <div id="bg-canvas"></div>
     <div id="bg-blur-img"></div>
+    <div id="api-status" class="api-status"></div>
+    <div id="toast" class="toast"></div>
 
-    <!-- ===== SIDEBAR ===== -->
     <aside id="sidebar">
         <div class="sidebar-header">
             <h2>Echo OS <span style="color:var(--text-main)">MUSIC</span></h2>
@@ -320,10 +337,9 @@
             <button class="btn-t9 secondary" style="flex:1;" onclick="openPlaylistModal()">+ Playlist</button>
         </div>
 
-        <div class="credits">EchoOS Music System v3.0</div>
+        <div class="credits">EchoOS Music System v3.1</div>
     </aside>
 
-    <!-- ===== MAIN PLAYER ===== -->
     <main>
         <div id="art-zone">
             <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0a192f; color:var(--accent); font-weight:800; font-size:3rem;">Echo OS Music</div>
@@ -353,7 +369,6 @@
         </div>
     </main>
 
-    <!-- ===== SEARCH OVERLAY ===== -->
     <div id="search-overlay" class="overlay">
         <div class="search-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h1 style="color: var(--accent);">Deep Search</h1>
@@ -375,16 +390,15 @@
         <div class="search-input-wrap">
             <input type="text" id="search-input" placeholder="Scanning for audio signals..." onkeypress="if(event.key==='Enter') execSearch(this.value)">
             <div class="search-source-toggle">
-                <button class="source-btn active" id="src-both" onclick="setSearchSource('both')">Both</button>
-                <button class="source-btn" id="src-spotify" onclick="setSearchSource('spotify')">Spotify</button>
-                <button class="source-btn" id="src-soundcloud" onclick="setSearchSource('soundcloud')">SoundCloud</button>
+                <button class="source-btn active" id="src-all" onclick="setSearchSource('all')">All</button>
+                <button class="source-btn" id="src-itunes" onclick="setSearchSource('itunes')">iTunes</button>
+                <button class="source-btn" id="src-jamendo" onclick="setSearchSource('jamendo')">Jamendo</button>
             </div>
         </div>
 
         <div id="search-results"></div>
     </div>
 
-    <!-- ===== PLAYLIST OVERLAY ===== -->
     <div id="playlist-overlay" class="overlay">
         <div style="max-width: 900px; margin: 0 auto; width: 100%;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -395,7 +409,6 @@
         </div>
     </div>
 
-    <!-- ===== CATEGORY OVERLAY ===== -->
     <div id="category-overlay" class="overlay">
         <div style="max-width: 900px; margin: 0 auto; width: 100%;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -406,7 +419,6 @@
         </div>
     </div>
 
-    <!-- ===== ADD TO PLAYLIST MODAL ===== -->
     <div id="add-to-playlist-modal" class="modal">
         <div class="modal-box">
             <h3>Add to Playlist</h3>
@@ -417,7 +429,6 @@
         </div>
     </div>
 
-    <!-- ===== CREATE PLAYLIST MODAL ===== -->
     <div id="create-playlist-modal" class="modal">
         <div class="modal-box">
             <h3>Create New Playlist</h3>
@@ -429,7 +440,6 @@
         </div>
     </div>
 
-    <!-- ===== RENAME PLAYLIST MODAL ===== -->
     <div id="rename-playlist-modal" class="modal">
         <div class="modal-box">
             <h3>Rename Playlist</h3>
@@ -441,13 +451,14 @@
         </div>
     </div>
 
-    <audio id="player"></audio>
+    <audio id="player" crossorigin="anonymous"></audio>
 
 <script>
-    // ===== STATE =====
     const audio = document.getElementById('player');
     const bgBlur = document.getElementById('bg-blur-img');
     const lyricsContainer = document.getElementById('lyrics-container');
+    const apiStatus = document.getElementById('api-status');
+    const toast = document.getElementById('toast');
 
     let queue = JSON.parse(localStorage.getItem('echo_queue') || '[]');
     let playlists = JSON.parse(localStorage.getItem('echo_playlists') || '[]');
@@ -457,12 +468,24 @@
     let lyricsData = [];
     let isLyricMode = false;
     let isLooping = false;
-    let searchSource = 'both';
+    let searchSource = 'all';
     let searchFilter = 'all';
     let sidebarTab = 'queue';
     let renamingPlaylistId = null;
+    let apiHealth = { itunes: true, jamendo: true, lyrics: true };
 
-    // ===== CATEGORIES =====
+    function showToast(message, type = 'info', duration = 3000) {
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    function setApiStatus(status, message) {
+        apiStatus.className = `api-status ${status}`;
+        apiStatus.textContent = message;
+        setTimeout(() => apiStatus.className = 'api-status', 3000);
+    }
+
     const CATEGORIES = [
         { name: 'Hip Hop', color: '#ff6b6b', img: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e5?w=300&q=80' },
         { name: 'Pop', color: '#4ecdc4', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80' },
@@ -478,108 +501,111 @@
         { name: 'Indie', color: '#74b9ff', img: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&q=80' },
     ];
 
-    // ===== SPOTIFY NO-AUTH API (using noauth approach) =====
-    let spotifyToken = null;
-    let spotifyTokenExpiry = 0;
-
-    async function getSpotifyToken() {
-        if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
+    async function searchiTunes(query, limit = 20) {
         try {
-            const res = await fetch('https://open.spotify.com/search');
-            const text = await res.text();
-            const tokenMatch = text.match(/accessToken":"([^"]+)/);
-            const expiryMatch = text.match(/accessTokenExpirationTimestamp":(\d+)/);
-            if (tokenMatch) {
-                spotifyToken = tokenMatch[1];
-                spotifyTokenExpiry = expiryMatch ? parseInt(expiryMatch[1]) : Date.now() + 3600000;
-                return spotifyToken;
-            }
-        } catch(e) { console.error('Spotify auth failed', e); }
-        return null;
-    }
-
-    async function searchSpotify(query, limit = 20) {
-        const token = await getSpotifyToken();
-        if (!token) return [];
-        try {
-            const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=${limit}`);
+            if (!res.ok) throw new Error('iTunes API error');
             const data = await res.json();
-            return (data.tracks?.items || []).map(t => ({
-                id: t.id,
-                title: t.name,
-                artist: t.artists.map(a => a.name).join(', '),
-                artwork: t.album.images[0]?.url || '',
-                source: 'spotify',
-                duration: Math.floor(t.duration_ms / 1000),
-                preview_url: t.preview_url,
-                album: t.album.name,
-                uri: t.uri
+            return (data.results || []).map(t => ({
+                id: t.trackId?.toString() || Math.random().toString(36),
+                title: t.trackName,
+                artist: t.artistName,
+                artwork: t.artworkUrl100?.replace('100x100', '600x600') || t.artworkUrl60?.replace('60x60', '600x600') || '',
+                source: 'itunes',
+                duration: t.trackTimeMillis ? Math.floor(t.trackTimeMillis / 1000) : 0,
+                preview_url: t.previewUrl,
+                album: t.collectionName,
+                genre: t.primaryGenreName,
+                trackUrl: t.trackViewUrl
             }));
-        } catch(e) { console.error('Spotify search failed', e); return []; }
+        } catch(e) {
+            console.error('iTunes search failed', e);
+            apiHealth.itunes = false;
+            return [];
+        }
     }
 
-    // ===== SOUNDCLOUD SEARCH =====
-    async function searchSoundCloud(query, limit = 20) {
+    async function searchJamendo(query, limit = 20) {
         try {
-            const res = await fetch(`https://0.4texasplayz4.workers.dev/s/${cleanQuery(query)}`);
+            const clientId = '8b20f2b7';
+            const res = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=${limit}&search=${encodeURIComponent(query)}&include=musicinfo&audioformat=mp32`);
+            if (!res.ok) throw new Error('Jamendo API error');
             const data = await res.json();
-            let results = data.results || data;
-            if (Array.isArray(results)) {
-                return results.slice(0, limit).map(t => ({
-                    id: t.id || Math.random().toString(36),
-                    title: t.title,
-                    artist: t.artist,
-                    artwork: t.artwork || '',
-                    source: 'soundcloud',
-                    url: t.url,
-                    duration: t.duration || 0
-                }));
-            }
-        } catch(e) { console.error('SoundCloud search failed', e); }
-        return [];
+            return (data.results || []).map(t => ({
+                id: t.id?.toString() || Math.random().toString(36),
+                title: t.name,
+                artist: t.artist_name,
+                artwork: t.album_image || t.image || '',
+                source: 'jamendo',
+                duration: t.duration || 0,
+                preview_url: t.audio,
+                album: t.album_name,
+                genre: t.musicinfo?.tags?.join(', ') || '',
+                trackUrl: t.shareurl
+            }));
+        } catch(e) {
+            console.error('Jamendo search failed', e);
+            apiHealth.jamendo = false;
+            return [];
+        }
     }
 
-    // ===== COMBINED SEARCH =====
     async function execSearch(query) {
         if (!query.trim()) return;
         const container = document.getElementById('search-results');
-        container.innerHTML = '<p style="color:var(--text-dim); text-align:center; grid-column:1/-1;">Scanning sources...</p>';
+        container.innerHTML = '<div class="loading-spinner"></div><p style="color:var(--text-dim); text-align:center; grid-column:1/-1;">Scanning sources...</p>';
 
         let results = [];
         const filterQuery = searchFilter !== 'all' ? `${query} ${searchFilter}` : query;
 
-        if (searchSource === 'both' || searchSource === 'spotify') {
-            const spotifyResults = await searchSpotify(filterQuery);
-            results = results.concat(spotifyResults);
+        const promises = [];
+
+        if (searchSource === 'all' || searchSource === 'itunes') {
+            promises.push(searchiTunes(filterQuery).then(r => { results = results.concat(r); }));
         }
-        if (searchSource === 'both' || searchSource === 'soundcloud') {
-            const scResults = await searchSoundCloud(filterQuery);
-            results = results.concat(scResults);
+        if (searchSource === 'all' || searchSource === 'jamendo') {
+            promises.push(searchJamendo(filterQuery).then(r => { results = results.concat(r); }));
         }
+
+        await Promise.all(promises);
 
         container.innerHTML = '';
         if (results.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-dim); text-align:center; grid-column:1/-1;">No signals detected.</p>';
+            container.innerHTML = '<p style="color:var(--text-dim); text-align:center; grid-column:1/-1;">No signals detected. Try a different search or check your connection.</p>';
+            setApiStatus('offline', 'Search APIs unavailable');
             return;
         }
+
+        const seen = new Set();
+        results = results.filter(t => {
+            const key = `${t.title}|${t.artist}`.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
 
         results.forEach(t => {
             const card = document.createElement('div');
             card.className = 'result-card fade-in';
+            const trackJson = JSON.stringify(t).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             card.innerHTML = `
                 <span class="source-badge ${t.source}">${t.source}</span>
-                <img src="${t.artwork || 'https://via.placeholder.com/300x300/0a192f/00d2ff?text=Echo'}" onerror="this.src='https://via.placeholder.com/300x300/0a192f/00d2ff?text=Echo'">
+                <img src="${t.artwork || 'https://via.placeholder.com/300x300/0a192f/00d2ff?text=Echo'}" onerror="this.src='https://via.placeholder.com/300x300/0a192f/00d2ff?text=Echo'" loading="lazy">
                 <div class="card-title">${t.title}</div>
                 <div class="card-artist">${t.artist}</div>
                 <div class="card-actions">
-                    <button onclick="playFromSearch(${JSON.stringify(t).replace(/"/g, '&quot;')})">▶ Play</button>
-                    <button onclick="addToQueueFromSearch(${JSON.stringify(t).replace(/"/g, '&quot;')})">+ Queue</button>
+                    <button onclick="playFromSearch(decodeTrack('${trackJson}'))">▶ Play</button>
+                    <button onclick="addToQueueFromSearch(decodeTrack('${trackJson}'))">+ Queue</button>
                 </div>
             `;
             container.appendChild(card);
         });
+
+        setApiStatus('online', `${results.length} tracks found`);
+    }
+
+    function decodeTrack(str) {
+        return JSON.parse(str.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
     }
 
     function playFromSearch(track) {
@@ -594,49 +620,69 @@
         queue.push(track);
         saveQueue();
         updateSidebar();
+        showToast(`Added "${track.title}" to queue`, 'success');
     }
 
-    // ===== PLAYBACK =====
     async function playTrack(index) {
         if (index < 0 || index >= queue.length) return;
         currentIndex = index;
         let track = queue[index];
 
         try {
-            if (track.source === 'soundcloud') {
-                const slug = track.url.replace(/https?:\/\/soundcloud\.com\//, '');
-                const res = await fetch(`https://0.4texasplayz4.workers.dev/d/${slug}`);
-                const data = await res.json();
-                currentTrackData = { ...data, source: 'soundcloud', title: data.song || data.title, artist: data.artist };
-                audio.src = data.streamUrl;
-            } else if (track.source === 'spotify') {
-                currentTrackData = { ...track, source: 'spotify' };
+            currentTrackData = { ...track };
+
+            if (track.source === 'itunes') {
                 if (track.preview_url) {
                     audio.src = track.preview_url;
                 } else {
-                    alert('No preview available for this Spotify track.');
+                    showToast('No preview available for this track', 'error');
+                    return;
+                }
+            } else if (track.source === 'jamendo') {
+                if (track.preview_url) {
+                    audio.src = track.preview_url;
+                } else {
+                    showToast('No stream URL available', 'error');
+                    return;
+                }
+            } else {
+                if (track.preview_url) {
+                    audio.src = track.preview_url;
+                } else {
+                    showToast('Cannot play this track format', 'error');
                     return;
                 }
             }
 
-            document.getElementById('art-zone').innerHTML = `<img src="${currentTrackData.artwork || ''}">`;
+            document.getElementById('art-zone').innerHTML = `<img src="${currentTrackData.artwork || ''}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0a192f;color:var(--accent);font-weight:800;font-size:3rem;>Echo</div>'">`;
             bgBlur.style.backgroundImage = `url(${currentTrackData.artwork || ''})`;
-            document.getElementById('track-title').innerText = currentTrackData.title || currentTrackData.song || 'Unknown';
+            document.getElementById('track-title').innerText = currentTrackData.title || 'Unknown';
             document.getElementById('track-artist').innerText = currentTrackData.artist || 'Unknown';
-            audio.play();
+
+            await audio.play();
             document.getElementById('play-btn').innerText = '⏸';
             updateSidebar();
 
-            if (isLyricMode) fetchLyrics(currentTrackData.artist, currentTrackData.title || currentTrackData.song);
+            if (isLyricMode) fetchLyrics(currentTrackData.artist, currentTrackData.title);
+
+            showToast(`Now playing: ${currentTrackData.title}`, 'success', 2000);
         } catch (e) { 
             console.error('Playback Error', e);
-            alert('Playback Error'); 
+            showToast('Playback failed. Try another track.', 'error');
+            document.getElementById('play-btn').innerText = '▶';
         }
     }
 
     function togglePlay() { 
-        if(!audio.src) return;
-        audio.paused ? (audio.play(), document.getElementById('play-btn').innerText = '⏸') : (audio.pause(), document.getElementById('play-btn').innerText = '▶'); 
+        if(!audio.src) {
+            showToast('No track loaded. Search and add tracks first!', 'info');
+            return;
+        }
+        audio.paused ? (audio.play().then(() => {
+            document.getElementById('play-btn').innerText = '⏸';
+        }).catch(() => {
+            showToast('Playback blocked by browser. Click play again.', 'warning');
+        })) : (audio.pause(), document.getElementById('play-btn').innerText = '▶'); 
     }
 
     function toggleLoop() {
@@ -644,6 +690,7 @@
         const btn = document.getElementById('loop-btn');
         btn.style.opacity = isLooping ? '1' : '0.5';
         btn.style.color = isLooping ? 'var(--accent)' : 'white';
+        showToast(isLooping ? 'Loop enabled' : 'Loop disabled', 'info', 1500);
     }
 
     function changeTrack(dir) { 
@@ -657,52 +704,81 @@
                 return;
             }
         }
-        playTrack(currentIndex + dir); 
+        const newIndex = currentIndex + dir;
+        if (newIndex >= 0 && newIndex < queue.length) {
+            playTrack(newIndex);
+        } else if (dir > 0 && queue.length > 0) {
+            playTrack(0);
+        } else if (dir < 0 && queue.length > 0) {
+            playTrack(queue.length - 1);
+        }
     }
 
     function formatTime(s) { 
-        if(isNaN(s)) return "0:00"; 
+        if(isNaN(s) || !isFinite(s)) return "0:00"; 
         const m=Math.floor(s/60), sc=Math.floor(s%60); 
         return `${m}:${sc<10?'0':''}${sc}`; 
     }
 
-    // ===== LYRICS =====
     function toggleLyrics() {
         isLyricMode = !isLyricMode;
         document.body.classList.toggle('lyric-mode', isLyricMode);
         lyricsContainer.style.display = isLyricMode ? 'block' : 'none';
-        if (isLyricMode && currentTrackData) fetchLyrics(currentTrackData.artist, currentTrackData.title || currentTrackData.song);
+        if (isLyricMode && currentTrackData) fetchLyrics(currentTrackData.artist, currentTrackData.title);
     }
 
     async function fetchLyrics(artist, title) {
         lyricsContainer.innerHTML = '<p class="lyric-line" style="color:var(--accent)">Scanning Satellite Data...</p>';
+
         try {
             const cleanArtist = (artist || '').replace(/feat\.|ft\.|featuring/gi, '').trim();
             const cleanTitle = (title || '').replace(/\(.*?\)|\[.*?\]/g, '').trim();
             const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(cleanArtist)}&track_name=${encodeURIComponent(cleanTitle)}`);
-            if (!res.ok) throw new Error('No lyrics found');
-            const data = await res.json();
-            if (data.syncedLyrics) {
-                const lines = data.syncedLyrics.split('\n');
-                lyricsData = lines.map(line => {
-                    const m = line.match(/\[(\d+):(\d+\.\d+)\](.*)/);
-                    return m ? { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() } : null;
-                }).filter(x => x);
-                lyricsContainer.innerHTML = lyricsData.map((l, i) => `<div class="lyric-line" id="l-${i}">${l.text}</div>`).join('');
-            } else if (data.plainLyrics) {
-                lyricsData = [];
-                lyricsContainer.innerHTML = `<div class="lyric-line" style="color:var(--text-dim); font-size:1rem; white-space:pre-wrap; text-align:left; padding:0 20px;">${data.plainLyrics}</div>`;
-            } else {
-                lyricsContainer.innerHTML = '<p class="lyric-line" style="color:var(--text-dim)">No synced lyrics available.</p>';
+            if (res.ok) {
+                const data = await res.json();
+                if (data.syncedLyrics) {
+                    const lines = data.syncedLyrics.split('\n');
+                    lyricsData = lines.map(line => {
+                        const m = line.match(/\[(\d+):(\d+\.\d+)\](.*)/);
+                        return m ? { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() } : null;
+                    }).filter(x => x);
+                    lyricsContainer.innerHTML = lyricsData.map((l, i) => `<div class="lyric-line" id="l-${i}">${l.text}</div>`).join('');
+                    apiHealth.lyrics = true;
+                    return;
+                } else if (data.plainLyrics) {
+                    lyricsData = [];
+                    lyricsContainer.innerHTML = `<div class="lyric-line" style="color:var(--text-dim); font-size:1rem; white-space:pre-wrap; text-align:left; padding:0 20px;">${data.plainLyrics}</div>`;
+                    apiHealth.lyrics = true;
+                    return;
+                }
             }
         } catch (e) { 
-            lyricsContainer.innerHTML = '<p class="lyric-line" style="color:var(--text-dim)">Lyrics not found in database.</p>'; 
+            console.log('lrclib failed, trying fallback...');
         }
+
+        try {
+            const res = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.lyrics) {
+                    lyricsData = [];
+                    lyricsContainer.innerHTML = `<div class="lyric-line" style="color:var(--text-dim); font-size:1rem; white-space:pre-wrap; text-align:left; padding:0 20px;">${data.lyrics}</div>`;
+                    apiHealth.lyrics = true;
+                    return;
+                }
+            }
+        } catch (e) {
+            console.log('lyrics.ovh failed too');
+        }
+
+        lyricsContainer.innerHTML = '<p class="lyric-line" style="color:var(--text-dim)">Lyrics not found in database.</p>';
+        apiHealth.lyrics = false;
     }
 
     audio.ontimeupdate = () => {
         const b = document.getElementById('seek-bar');
-        b.max = audio.duration || 0; b.value = audio.currentTime;
+        b.max = audio.duration || 0; 
+        b.value = audio.currentTime;
         document.getElementById('time-cur').innerText = formatTime(audio.currentTime);
         document.getElementById('time-dur').innerText = formatTime(audio.duration);
 
@@ -719,7 +795,10 @@
         }
     };
 
-    document.getElementById('seek-bar').oninput = (e) => audio.currentTime = e.target.value;
+    document.getElementById('seek-bar').oninput = (e) => {
+        if (audio.duration) audio.currentTime = e.target.value;
+    };
+
     audio.onended = () => {
         if (isLooping) {
             audio.currentTime = 0;
@@ -729,7 +808,11 @@
         }
     };
 
-    // ===== SIDEBAR & QUEUE =====
+    audio.onerror = () => {
+        showToast('Audio playback error. Skipping...', 'error');
+        setTimeout(() => changeTrack(1), 1500);
+    };
+
     function switchSidebarTab(tab) {
         sidebarTab = tab;
         document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
@@ -748,7 +831,7 @@
             }
             container.innerHTML = queue.map((t, i) => `
                 <div class="q-row ${i === currentIndex ? 'active' : ''}">
-                    <img src="${t.artwork || ''}" onerror="this.style.display='none'" onclick="playTrack(${i})">
+                    <img src="${t.artwork || ''}" onerror="this.style.display='none'" onclick="playTrack(${i})" loading="lazy">
                     <div style="flex:1; overflow:hidden" onclick="playTrack(${i})">
                         <div style="font-weight:700; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; font-size:0.85rem;">${t.title}</div>
                         <div style="font-size:0.7rem; color:var(--text-dim)">${t.artist}</div>
@@ -822,7 +905,6 @@
         lyricsContainer.innerHTML = '';
     }
 
-    // ===== PLAYLISTS =====
     function openPlaylistModal() {
         document.getElementById('create-playlist-modal').classList.add('active');
         document.getElementById('new-playlist-name').focus();
@@ -842,10 +924,12 @@
         document.getElementById('new-playlist-name').value = '';
         closeModal('create-playlist-modal');
         updateSidebar();
+        showToast(`Playlist "${name}" created`, 'success');
     }
 
     function deletePlaylist(id) {
         if (!confirm('Delete this playlist?')) return;
+        const pl = playlists.find(p => p.id === id);
         playlists = playlists.filter(p => p.id !== id);
         if (currentPlaylistId === id) {
             currentPlaylistId = null;
@@ -853,6 +937,7 @@
         }
         savePlaylists();
         updateSidebar();
+        showToast(`Playlist "${pl?.name || ''}" deleted`, 'info');
     }
 
     function renamePlaylistPrompt(id) {
@@ -871,6 +956,7 @@
             pl.name = name;
             savePlaylists();
             updateSidebar();
+            showToast(`Renamed to "${name}"`, 'success');
         }
         renamingPlaylistId = null;
         closeModal('rename-playlist-modal');
@@ -879,22 +965,23 @@
     function loadPlaylist(id) {
         const pl = playlists.find(p => p.id === id);
         if (!pl || pl.tracks.length === 0) {
-            alert('Playlist is empty');
+            showToast('Playlist is empty', 'warning');
             return;
         }
         queue = [...pl.tracks];
         currentPlaylistId = id;
         saveQueue();
         playTrack(0);
+        showToast(`Playing playlist: ${pl.name}`, 'success');
     }
 
     function addCurrentToPlaylist() {
         if (!currentTrackData) {
-            alert('No track currently playing');
+            showToast('No track currently playing', 'warning');
             return;
         }
         if (playlists.length === 0) {
-            alert('Create a playlist first!');
+            showToast('Create a playlist first!', 'info');
             openPlaylistModal();
             return;
         }
@@ -921,20 +1008,20 @@
             title: currentTrackData.title || currentTrackData.song || 'Unknown',
             artist: currentTrackData.artist || 'Unknown',
             artwork: currentTrackData.artwork || '',
-            source: currentTrackData.source || 'soundcloud',
-            url: currentTrackData.url || '',
-            preview_url: currentTrackData.preview_url || '',
-            uri: currentTrackData.uri || ''
+            source: currentTrackData.source || 'itunes',
+            preview_url: currentTrackData.preview_url || currentTrackData.url || '',
+            duration: currentTrackData.duration || 0,
+            album: currentTrackData.album || '',
+            genre: currentTrackData.genre || ''
         };
 
         pl.tracks.push(track);
         savePlaylists();
         closeModal('add-to-playlist-modal');
         updateSidebar();
-        alert(`Added to "${pl.name}"!`);
+        showToast(`Added to "${pl.name}"!`, 'success');
     }
 
-    // ===== CATEGORIES =====
     function searchCategory(category) {
         showOverlay('search-overlay');
         document.getElementById('search-input').value = category;
@@ -951,7 +1038,6 @@
         `).join('');
     }
 
-    // ===== SEARCH UTILS =====
     function setSearchSource(source) {
         searchSource = source;
         document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
@@ -968,7 +1054,6 @@
         return str.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '+');
     }
 
-    // ===== UI UTILS =====
     function showOverlay(id) { 
         document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
         document.getElementById(id).classList.add('active'); 
@@ -998,11 +1083,9 @@
         `).join('');
     }
 
-    // ===== STORAGE =====
     function saveQueue() { localStorage.setItem('echo_queue', JSON.stringify(queue)); }
     function savePlaylists() { localStorage.setItem('echo_playlists', JSON.stringify(playlists)); }
 
-    // ===== POSTMESSAGE =====
     function sendParentUpdate() {
         if (window.parent !== window) {
             window.parent.postMessage({
@@ -1040,10 +1123,21 @@
         }
     });
 
-    // ===== INIT =====
     updateSidebar();
 
-    // Keyboard shortcuts
+    (async function testAPIs() {
+        try {
+            const test = await fetch('https://itunes.apple.com/search?term=test&limit=1');
+            if (test.ok) {
+                apiHealth.itunes = true;
+                console.log('iTunes API: OK');
+            }
+        } catch(e) {
+            apiHealth.itunes = false;
+            console.warn('iTunes API: Unavailable');
+        }
+    })();
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') hideOverlays();
         if (e.key === ' ' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); togglePlay(); }
