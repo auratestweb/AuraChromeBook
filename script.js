@@ -2,6 +2,16 @@
 // All user data is stored in localStorage with account-specific prefixes
 
 const ECHO_DOMAIN = '@echoos.com';
+// ===== SAFE LOCALSTORAGE HELPERS =====
+function safeJSONParse(key, defaultValue) {
+    try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : defaultValue; }
+    catch (e) { console.warn('Corrupted data for', key); return defaultValue; }
+}
+function safeJSONParseRaw(data, defaultValue) {
+    try { return data ? JSON.parse(data) : defaultValue; }
+    catch (e) { console.warn('JSON parse error'); return defaultValue; }
+}
+
 let currentAccount = null; // { email, username, name, password }
 
 // Initialize account database
@@ -13,8 +23,7 @@ function initAccountDB() {
 
 // Get all accounts from database
 function getAllAccounts() {
-    const db = localStorage.getItem('echo_accounts_db');
-    return db ? JSON.parse(db) : {};
+    return safeJSONParse('echo_accounts_db', {});
 }
 
 // Save account to database
@@ -3894,629 +3903,168 @@ function saveSecuritySettings() {
 
 // --- Window Memory Management ---
 
+// ===== XBOX SERIES X TRANSFORMATION =====
+let xboxCurrentTab='home',xboxFocusIndex=0,xboxGuideOpen=false;
 
+function initXboxDashboard(){renderXboxDashboard();setupXboxKeyboardNav();}
 
-// ===== XBOX SERIES X TRANSFORMATION - APPENDED CODE =====
-
-// Xbox Dashboard System
-let xboxCurrentTab = 'home';
-let xboxFocusIndex = 0;
-let xboxGuideOpen = false;
-
-// Initialize Xbox Dashboard
-function initXboxDashboard() {
-    renderXboxDashboard();
-    setupXboxKeyboardNav();
-
-    // Show nav hint briefly
-    const hint = document.getElementById('xbox-nav-hint');
-    if (hint) {
-        setTimeout(() => hint.classList.add('visible'), 2000);
-        setTimeout(() => hint.classList.remove('visible'), 6000);
-    }
+function switchXboxTab(tabName){
+    xboxCurrentTab=tabName;
+    document.querySelectorAll('.xbox-nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tabName));
+    const c=document.getElementById('xbox-content-area');if(!c)return;
+    if(tabName==='home')renderXboxHome(c);
+    else if(tabName==='mygames')renderXboxMyGames(c);
+    else if(tabName==='store'){openApp('store-window');switchXboxTab('home');}
+    else if(tabName==='apps')renderXboxApps(c);
+    else if(tabName==='settings'){openApp('settings-window');switchXboxTab('home');}
+    xboxFocusIndex=0;updateXboxFocus();
 }
 
-// Switch Xbox tabs
-function switchXboxTab(tabName) {
-    xboxCurrentTab = tabName;
-
-    // Update tab buttons
-    document.querySelectorAll('.xbox-nav-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === tabName);
-    });
-
-    // Update content
-    const contentArea = document.getElementById('xbox-content-area');
-    if (!contentArea) return;
-
-    switch(tabName) {
-        case 'home':
-            renderXboxHome(contentArea);
-            break;
-        case 'mygames':
-            renderXboxMyGames(contentArea);
-            break;
-        case 'store':
-            openApp('store-window');
-            switchXboxTab('home');
-            break;
-        case 'apps':
-            renderXboxApps(contentArea);
-            break;
-        case 'settings':
-            openApp('settings-window');
-            switchXboxTab('home');
-            break;
-    }
-
-    xboxFocusIndex = 0;
-    updateXboxFocus();
+function createXboxTile(appId,item,installed){
+    const isGame=PS_GAMES[appId]!==undefined;
+    return '<div class="xbox-game-tile xbox-focusable" data-app-id="'+appId+'" tabindex="0" onclick="xboxLaunchApp(''+appId+'')"><div class="xbox-tile-image"><img src="'+item.banner+'" alt="'+item.name+'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="xbox-tile-icon" style="display:none;">'+item.icon+'</div>'+(installed?'<span class="xbox-tile-installed">INSTALLED</span>':'')+'</div><div class="xbox-tile-title">'+item.name+'</div><div class="xbox-tile-meta">'+(isGame?'🎮 Game':'📱 App')+' • ⭐'+item.rating+'</div></div>';
 }
 
-// Create Xbox Game Tile HTML
-function createXboxGameTile(appId, item, installed = false) {
-    const isGame = PS_GAMES[appId] !== undefined;
-    return `
-        <div class="xbox-game-tile xbox-focusable" data-app-id="${appId}" tabindex="0" onclick="xboxLaunchApp('${appId}')">
-            <div class="xbox-tile-image">
-                <img src="${item.banner}" alt="${item.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="xbox-tile-icon" style="display:none;">${item.icon}</div>
-                ${installed ? '<span class="xbox-tile-installed">INSTALLED</span>' : ''}
-            </div>
-            <div class="xbox-tile-title">${item.name}</div>
-            <div class="xbox-tile-meta">${isGame ? '🎮 Game' : '📱 App'} • ⭐${item.rating}</div>
-        </div>
-    `;
+function renderXboxHome(c){
+    const recent=getRecentPlays(),installed=JSON.parse(getAccountData('installed_apps')||localStorage.getItem('echo_installed_apps')||'[]');
+    let h='<div class="xbox-hero xbox-focusable" onclick="openApp('gtavice-window')" tabindex="0"><img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200" onerror="this.style.display='none'"><div class="xbox-hero-overlay"><h1 class="xbox-hero-title">GTA III: Vice City</h1><p class="xbox-hero-subtitle">Classic open-world crime adventure</p><button class="xbox-hero-btn xbox-focusable">▶ Play</button></div></div>';
+    if(recent.length>0)h+='<div class="xbox-quick-resume"><div class="xbox-quick-resume-header"><span style="font-size:20px;">⚡</span><h3>Quick Resume</h3></div><div class="xbox-games-grid">'+recent.slice(0,5).map(id=>{const g=PS_GAMES[id];return g?createXboxTile(id,g,true):''}).join('')+'</div></div>';
+    if(recent.length>0)h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Recently Played</h3><span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span></div><div class="xbox-games-grid">'+recent.slice(0,8).map(id=>{const g=PS_GAMES[id];return g?createXboxTile(id,g,true):''}).join('')+'</div></div>';
+    if(installed.length>0)h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Installed Games</h3><span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span></div><div class="xbox-games-grid">'+installed.slice(0,8).map(a=>{const g=PS_GAMES[a.id];return g?createXboxTile(a.id,g,true):''}).join('')+'</div></div>';
+    h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">All Games</h3><span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span></div><div class="xbox-games-grid">'+Object.values(PS_GAMES).slice(0,12).map(g=>createXboxTile(g.id,g)).join('')+'</div></div>';
+    c.innerHTML=h;
 }
 
-// Render Xbox Home
-function renderXboxHome(container) {
-    const recent = getRecentPlays();
-    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
-
-    let html = `
-        <div class="xbox-hero xbox-focusable" onclick="openApp('gtavice-window')" tabindex="0">
-            <img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200" alt="Featured" onerror="this.style.display='none'">
-            <div class="xbox-hero-overlay">
-                <h1 class="xbox-hero-title">GTA III: Vice City</h1>
-                <p class="xbox-hero-subtitle">Classic open-world crime adventure</p>
-                <button class="xbox-hero-btn xbox-focusable">▶ Play</button>
-            </div>
-        </div>
-    `;
-
-    if (recent.length > 0) {
-        html += `
-            <div class="xbox-quick-resume">
-                <div class="xbox-quick-resume-header">
-                    <span style="font-size:20px;">⚡</span>
-                    <h3>Quick Resume</h3>
-                </div>
-                <div class="xbox-games-grid">
-                    ${recent.slice(0, 5).map(appId => {
-                        const game = PS_GAMES[appId];
-                        if (!game) return '';
-                        return createXboxGameTile(appId, game, true);
-                    }).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    if (recent.length > 0) {
-        html += `
-            <div class="xbox-game-row">
-                <div class="xbox-row-header">
-                    <h3 class="xbox-row-title">Recently Played</h3>
-                    <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
-                </div>
-                <div class="xbox-games-grid">
-                    ${recent.slice(0, 8).map(appId => {
-                        const game = PS_GAMES[appId];
-                        if (!game) return '';
-                        return createXboxGameTile(appId, game, true);
-                    }).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    if (installed.length > 0) {
-        html += `
-            <div class="xbox-game-row">
-                <div class="xbox-row-header">
-                    <h3 class="xbox-row-title">Installed Games</h3>
-                    <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
-                </div>
-                <div class="xbox-games-grid">
-                    ${installed.slice(0, 8).map(app => {
-                        const game = PS_GAMES[app.id];
-                        if (!game) return '';
-                        return createXboxGameTile(app.id, game, true);
-                    }).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    html += `
-        <div class="xbox-game-row">
-            <div class="xbox-row-header">
-                <h3 class="xbox-row-title">All Games</h3>
-                <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
-            </div>
-            <div class="xbox-games-grid">
-                ${Object.values(PS_GAMES).slice(0, 12).map(game => createXboxGameTile(game.id, game)).join('')}
-            </div>
-        </div>
-    `;
-
-    container.innerHTML = html;
-    setupXboxTileClicks();
+function renderXboxMyGames(c){
+    const installed=JSON.parse(getAccountData('installed_apps')||localStorage.getItem('echo_installed_apps')||'[]');
+    let h='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">My Games & Apps</h3></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;padding:10px 0;">';
+    PRE_INSTALLED_APPS.forEach(id=>{const g=PS_GAMES[id],a=PS_APPS[id],i=g||a;if(i)h+=createXboxTile(id,i,true);});
+    installed.forEach(a=>{const g=PS_GAMES[a.id];if(g)h+=createXboxTile(a.id,g,true);});
+    Object.values(PS_GAMES).forEach(g=>{const is=installed.find(a=>a.id===g.id)||PRE_INSTALLED_APPS.includes(g.id);if(!is)h+=createXboxTile(g.id,g,false);});
+    h+='</div></div>';c.innerHTML=h;
 }
 
-// Render My Games
-function renderXboxMyGames(container) {
-    const installed = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
-
-    let html = `
-        <div class="xbox-game-row">
-            <div class="xbox-row-header">
-                <h3 class="xbox-row-title">My Games & Apps</h3>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:20px; padding:10px 0;">
-    `;
-
-    PRE_INSTALLED_APPS.forEach(appId => {
-        const game = PS_GAMES[appId];
-        const app = PS_APPS[appId];
-        const item = game || app;
-        if (item) {
-            html += createXboxGameTile(appId, item, true);
-        }
-    });
-
-    installed.forEach(app => {
-        const game = PS_GAMES[app.id];
-        if (game) {
-            html += createXboxGameTile(app.id, game, true);
-        }
-    });
-
-    Object.values(PS_GAMES).forEach(game => {
-        const isInstalled = installed.find(a => a.id === game.id) || PRE_INSTALLED_APPS.includes(game.id);
-        if (!isInstalled) {
-            html += createXboxGameTile(game.id, game, false);
-        }
-    });
-
-    html += '</div></div>';
-    container.innerHTML = html;
-    setupXboxTileClicks();
+function renderXboxApps(c){
+    let h='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Apps</h3></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;padding:10px 0;">';
+    Object.values(PS_APPS).forEach(a=>h+=createXboxTile(a.id,a,true));
+    h+='</div></div>';c.innerHTML=h;
 }
 
-// Render Xbox Apps
-function renderXboxApps(container) {
-    let html = `
-        <div class="xbox-game-row">
-            <div class="xbox-row-header">
-                <h3 class="xbox-row-title">Apps</h3>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:20px; padding:10px 0;">
-    `;
+function xboxLaunchApp(appId){openApp(appId);if(PS_GAMES[appId])trackGameOpen(appId);}
 
-    Object.values(PS_APPS).forEach(app => {
-        html += createXboxGameTile(app.id, app, true);
-    });
+function toggleXboxGuide(){const g=document.getElementById('xbox-guide');if(!g)return;xboxGuideOpen=!xboxGuideOpen;g.classList.toggle('active',xboxGuideOpen);}
 
-    html += '</div></div>';
-    container.innerHTML = html;
-    setupXboxTileClicks();
-}
-
-// Launch app from Xbox dashboard
-function xboxLaunchApp(appId) {
-    openApp(appId);
-    if (PS_GAMES[appId]) {
-        trackGameOpen(appId);
-    }
-}
-
-// Setup Xbox tile clicks
-function setupXboxTileClicks() {
-    document.querySelectorAll('.xbox-game-tile').forEach(tile => {
-        tile.addEventListener('click', function() {
-            const appId = this.dataset.appId;
-            if (appId) xboxLaunchApp(appId);
-        });
-        tile.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const appId = this.dataset.appId;
-                if (appId) xboxLaunchApp(appId);
-            }
-        });
+function setupXboxKeyboardNav(){
+    document.addEventListener('keydown',function(e){
+        if(e.key==='Escape')toggleXboxGuide();
+        const d=document.getElementById('xbox-dashboard');if(!d||d.style.display==='none')return;
+        if(document.querySelector('.window[style*="display: flex"]'))return;
+        const f=d.querySelectorAll('.xbox-focusable,.xbox-nav-tab,.xbox-hero-btn');if(!f.length)return;
+        if(e.key==='ArrowRight'){e.preventDefault();xboxFocusIndex=(xboxFocusIndex+1)%f.length;updateXboxFocus();}
+        else if(e.key==='ArrowLeft'){e.preventDefault();xboxFocusIndex=(xboxFocusIndex-1+f.length)%f.length;updateXboxFocus();}
+        else if(e.key==='ArrowDown'){e.preventDefault();xboxFocusIndex=Math.min(xboxFocusIndex+4,f.length-1);updateXboxFocus();}
+        else if(e.key==='ArrowUp'){e.preventDefault();xboxFocusIndex=Math.max(xboxFocusIndex-4,0);updateXboxFocus();}
+        else if(e.key==='Enter'){e.preventDefault();f[xboxFocusIndex]?.click();}
     });
 }
 
-// Xbox Guide Toggle
-function toggleXboxGuide() {
-    const guide = document.getElementById('xbox-guide');
-    if (!guide) return;
-    xboxGuideOpen = !xboxGuideOpen;
-    guide.classList.toggle('active', xboxGuideOpen);
-}
-
-// Xbox Keyboard Navigation
-function setupXboxKeyboardNav() {
-    document.addEventListener('keydown', function(e) {
-        // Xbox button / ESC to toggle guide
-        if (e.key === 'Escape') {
-            toggleXboxGuide();
-        }
-
-        const dashboard = document.getElementById('xbox-dashboard');
-        if (!dashboard || dashboard.style.display === 'none') return;
-
-        const anyWindowOpen = document.querySelector('.window[style*="display: flex"]');
-        if (anyWindowOpen) return;
-
-        if (xboxGuideOpen) {
-            // Guide navigation
-            if (e.key === 'Escape' || e.key === 'Enter') {
-                return; // Let default handlers work
-            }
-        }
-
-        const focusables = dashboard.querySelectorAll('.xbox-focusable, .xbox-nav-tab.active, .xbox-hero-btn');
-        if (focusables.length === 0) return;
-
-        if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            xboxFocusIndex = (xboxFocusIndex + 1) % focusables.length;
-            updateXboxFocus();
-        } else if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            xboxFocusIndex = (xboxFocusIndex - 1 + focusables.length) % focusables.length;
-            updateXboxFocus();
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            xboxFocusIndex = Math.min(xboxFocusIndex + 4, focusables.length - 1);
-            updateXboxFocus();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            xboxFocusIndex = Math.max(xboxFocusIndex - 4, 0);
-            updateXboxFocus();
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            focusables[xboxFocusIndex]?.click();
-        }
+function updateXboxFocus(){
+    const d=document.getElementById('xbox-dashboard');if(!d)return;
+    d.querySelectorAll('.xbox-focusable,.xbox-nav-tab,.xbox-hero-btn').forEach((el,i)=>{
+        if(i===xboxFocusIndex){el.style.outline='3px solid #9bf00b';el.style.outlineOffset='3px';el.style.boxShadow='0 0 20px rgba(155,240,11,0.3)';el.focus();}
+        else{el.style.outline='none';el.style.outlineOffset='0';el.style.boxShadow='none';}
     });
 }
 
-// Update Xbox focus visual
-function updateXboxFocus() {
-    const dashboard = document.getElementById('xbox-dashboard');
-    if (!dashboard) return;
-
-    const focusables = dashboard.querySelectorAll('.xbox-focusable, .xbox-nav-tab, .xbox-hero-btn');
-    focusables.forEach((el, i) => {
-        if (i === xboxFocusIndex) {
-            el.style.outline = '3px solid #9bf00b';
-            el.style.outlineOffset = '3px';
-            el.style.boxShadow = '0 0 20px rgba(155, 240, 11, 0.3)';
-            el.focus();
-        } else {
-            el.style.outline = 'none';
-            el.style.outlineOffset = '0';
-            el.style.boxShadow = 'none';
-        }
-    });
+function renderXboxDashboard(){
+    const c=document.getElementById('xbox-content-area');if(c)renderXboxHome(c);
+    const g=document.getElementById('xbox-gamertag-display');
+    if(g&&currentAccount)g.innerText=currentAccount.name||currentAccount.username;
+    else if(g)g.innerText=localStorage.getItem('echo_username')||'Player1';
 }
 
-// Render full dashboard
-function renderXboxDashboard() {
-    const contentArea = document.getElementById('xbox-content-area');
-    if (contentArea) {
-        renderXboxHome(contentArea);
-    }
-
-    const gamertagEl = document.getElementById('xbox-gamertag-display');
-    if (gamertagEl && currentAccount) {
-        gamertagEl.innerText = currentAccount.name || currentAccount.username;
-    } else if (gamertagEl) {
-        gamertagEl.innerText = localStorage.getItem('echo_username') || 'Player1';
-    }
-}
-
-// ===== XBOX STARTUP OVERRIDES =====
-
-// Xbox Dashboard Initialization
-function initializeXboxDashboard() {
-    const desktop = document.getElementById('desktop');
-    const xboxDashboard = document.getElementById('xbox-dashboard');
-
-    if (desktop) desktop.style.display = 'none';
-    if (xboxDashboard) {
-        xboxDashboard.style.display = 'flex';
-        xboxDashboard.classList.add('active');
-    }
-
+function initializeXboxDashboard(){
+    const desk=document.getElementById('desktop'),dash=document.getElementById('xbox-dashboard');
+    if(desk)desk.style.display='none';if(dash){dash.style.display='flex';dash.classList.add('active');}
     initXboxDashboard();
-
-    updateCalendarWidget();
-    initChromeProxy();
-    initTabCloak();
-    initAboutBlankSettings();
-    initBatterySaver();
-    restoreActiveApps();
-
-    const savedWallpaper = getAccountData('wallpaper') || localStorage.getItem('echo_wallpaper');
-    if (savedWallpaper && desktop) {
-        desktop.style.backgroundImage = `url('${savedWallpaper}')`;
-    }
-
-    const savedApps = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
-    savedApps.forEach(app => {
-        restoreAppToLauncher(app.id, app.icon, app.name);
-        if (app.pinned) {
-            restoreAppToTaskbar(app.id, app.icon, app.name);
-        }
-    });
-
-    PRE_INSTALLED_APPS.forEach(appId => {
-        const game = PS_GAMES[appId];
-        const app = PS_APPS[appId];
-        const item = game || app;
-        if (item && !document.getElementById('taskbar-' + appId)) {
-            restoreAppToTaskbar(appId, item.icon, item.name);
-        }
-    });
-
+    updateCalendarWidget();initChromeProxy();initTabCloak();initAboutBlankSettings();initBatterySaver();restoreActiveApps();
+    const wp=getAccountData('wallpaper')||localStorage.getItem('echo_wallpaper');if(wp&&desk)desk.style.backgroundImage="url('"+wp+"')";
+    const apps=JSON.parse(getAccountData('installed_apps')||localStorage.getItem('echo_installed_apps')||'[]');
+    apps.forEach(a=>{restoreAppToLauncher(a.id,a.icon,a.name);if(a.pinned)restoreAppToTaskbar(a.id,a.icon,a.name);});
+    PRE_INSTALLED_APPS.forEach(id=>{const g=PS_GAMES[id],a=PS_APPS[id],i=g||a;if(i&&!document.getElementById('taskbar-'+id))restoreAppToTaskbar(id,i.icon,i.name);});
     document.querySelectorAll('.app-icon').forEach(makeIconDraggable);
     document.querySelectorAll('.desktop-icon').forEach(dragDesktopIcon);
-    initLauncherContextMenu();
-    initBattery();
-    renderFiles();
-    initLinkCreator();
+    initLauncherContextMenu();initBattery();renderFiles();initLinkCreator();
 }
 
-// Override initializeDesktop
-window.initializeDesktop = function() {
-    initializeXboxDashboard();
+// Override key functions for Xbox
+window.initializeDesktop=function(){initializeXboxDashboard();};
+
+window.initializeDesktopWithAccount=function(){
+    if(!currentAccount)return;
+    const saved=getAccountData('setup_complete');
+    if(!saved){const s=document.getElementById('setup-screen');if(s){s.style.display='flex';const n=document.getElementById('setup-name-input');if(n)n.value=currentAccount.name;}}
+    else{initializeXboxDashboard();const p=getAccountData('password');if(p){const l=document.getElementById('lock-screen');if(l){updateLockScreenForAccount();l.style.display='flex';}}else showCreatorScreen();}
 };
 
-// Override initializeDesktopWithAccount
-window.initializeDesktopWithAccount = function() {
-    if (!currentAccount) return;
-    const savedSetup = getAccountData('setup_complete');
-    if (!savedSetup) {
-        const setupScreen = document.getElementById('setup-screen');
-        if (setupScreen) {
-            setupScreen.style.display = 'flex';
-            const nameInput = document.getElementById('setup-name-input');
-            if (nameInput) nameInput.value = currentAccount.name;
-        }
-    } else {
-        initializeXboxDashboard();
-        const accountPassword = getAccountData('password');
-        if (accountPassword) {
-            const lockScreen = document.getElementById('lock-screen');
-            if (lockScreen) {
-                updateLockScreenForAccount();
-                lockScreen.style.display = 'flex';
-            }
-        } else {
-            showCreatorScreen();
-        }
-    }
+window.showAccountLoadingScreen=function(){
+    const ls=document.getElementById('account-loading-screen'),em=document.getElementById('loading-email'),pr=document.getElementById('loading-progress'),de=document.getElementById('loading-details');
+    if(ls)ls.style.display='flex';if(em&&currentAccount)em.innerText=currentAccount.email;
+    const steps=[{p:15,t:'Signing in...'},{p:30,t:'Loading profile...'},{p:45,t:'Syncing game saves...'},{p:60,t:'Loading games and apps...'},{p:75,t:'Preparing dashboard...'},{p:90,t:'Almost there...'},{p:100,t:'Welcome to Echo OS for Xbox!'}];
+    let i=0;const iv=setInterval(()=>{if(i>=steps.length){clearInterval(iv);setTimeout(()=>{if(ls)ls.style.display='none';initializeXboxDashboard();},800);return;}
+    const s=steps[i];if(pr)pr.style.width=s.p+'%';if(de)de.innerText=s.t;i++;},500);
 };
 
-// Override showAccountLoadingScreen
-window.showAccountLoadingScreen = function() {
-    const loadingScreen = document.getElementById('account-loading-screen');
-    const emailEl = document.getElementById('loading-email');
-    const progressEl = document.getElementById('loading-progress');
-    const detailsEl = document.getElementById('loading-details');
-
-    if (loadingScreen) loadingScreen.style.display = 'flex';
-    if (emailEl && currentAccount) emailEl.innerText = currentAccount.email;
-
-    const steps = [
-        { progress: 15, text: 'Signing in...' },
-        { progress: 30, text: 'Loading profile...' },
-        { progress: 45, text: 'Syncing game saves...' },
-        { progress: 60, text: 'Loading games and apps...' },
-        { progress: 75, text: 'Preparing dashboard...' },
-        { progress: 90, text: 'Almost there...' },
-        { progress: 100, text: 'Welcome to Echo OS for Xbox!' }
-    ];
-
-    let stepIndex = 0;
-    const interval = setInterval(() => {
-        if (stepIndex >= steps.length) {
-            clearInterval(interval);
-            setTimeout(() => {
-                if (loadingScreen) loadingScreen.style.display = 'none';
-                initializeXboxDashboard();
-            }, 800);
-            return;
-        }
-        const step = steps[stepIndex];
-        if (progressEl) progressEl.style.width = step.progress + '%';
-        if (detailsEl) detailsEl.innerText = step.text;
-        stepIndex++;
-    }, 500);
+window.showCreatorScreen=function(){
+    const cs=document.getElementById('creator-screen'),ct=document.getElementById('creator-text');
+    if(!cs){initializeXboxDashboard();showUpdateModal();triggerInitialNotifications();return;}
+    cs.style.display='flex';cs.style.opacity='1';setTimeout(()=>{if(ct)ct.style.opacity='1';},100);
+    setTimeout(()=>{if(ct)ct.style.opacity='0';},2500);
+    setTimeout(()=>{cs.style.transition='opacity 1s ease-out';cs.style.opacity='0';setTimeout(()=>{cs.style.display='none';const d=document.getElementById('xbox-dashboard');if(d){d.style.opacity='0';d.style.transition='opacity 1s ease-in';setTimeout(()=>d.style.opacity='1',100);}setTimeout(()=>{showUpdateModal();triggerInitialNotifications();},1000);},1000);},3500);
 };
 
-// Override showCreatorScreen
-window.showCreatorScreen = function() {
-    const creatorScreen = document.getElementById('creator-screen');
-    const creatorText = document.getElementById('creator-text');
-
-    if (!creatorScreen) {
-        initializeXboxDashboard();
-        showUpdateModal();
-        triggerInitialNotifications();
-        return;
-    }
-
-    creatorScreen.style.display = 'flex';
-    creatorScreen.style.opacity = '1';
-
-    setTimeout(() => {
-        if (creatorText) creatorText.style.opacity = '1';
-    }, 100);
-
-    setTimeout(() => {
-        if (creatorText) creatorText.style.opacity = '0';
-    }, 2500);
-
-    setTimeout(() => {
-        creatorScreen.style.transition = 'opacity 1s ease-out';
-        creatorScreen.style.opacity = '0';
-
-        setTimeout(() => {
-            creatorScreen.style.display = 'none';
-            const xboxDashboard = document.getElementById('xbox-dashboard');
-            if (xboxDashboard) {
-                xboxDashboard.style.opacity = '0';
-                xboxDashboard.style.transition = 'opacity 1s ease-in';
-                setTimeout(() => {
-                    xboxDashboard.style.opacity = '1';
-                }, 100);
-            }
-            setTimeout(() => {
-                showUpdateModal();
-                triggerInitialNotifications();
-            }, 1000);
-        }, 1000);
-    }, 3500);
+window.unlockOS=function(){
+    const inp=document.getElementById('lock-password').value,err=document.getElementById('lock-error'),ls=document.getElementById('lock-screen');
+    let cp=null;if(currentAccount)cp=getAccountData('password')||currentAccount.password;else cp=localStorage.getItem('echo_password');
+    const sa=currentAccount?getAccountData('answer'):localStorage.getItem('echo_answer');
+    if(inp===cp||inp===sa){if(ls)ls.style.display='none';document.getElementById('lock-password').value='';if(err)err.style.display='none';showCreatorScreen();}
+    else{if(err)err.style.display='block';}
 };
 
-// Override unlockOS
-window.unlockOS = function() {
-    const input = document.getElementById('lock-password').value;
-    const lockError = document.getElementById('lock-error');
-    const lockScreen = document.getElementById('lock-screen');
-
-    let correctPassword = null;
-    if (currentAccount) {
-        correctPassword = getAccountData('password') || currentAccount.password;
-    } else {
-        correctPassword = localStorage.getItem('echo_password');
-    }
-
-    const savedAnswer = currentAccount ? getAccountData('answer') : localStorage.getItem('echo_answer');
-
-    if (input === correctPassword || input === savedAnswer) {
-        if (lockScreen) lockScreen.style.display = 'none';
-        document.getElementById('lock-password').value = '';
-        if (lockError) lockError.style.display = 'none';
-        showCreatorScreen();
-    } else {
-        if (lockError) lockError.style.display = 'block';
-    }
+window.finalizeSetup=function(){
+    localStorage.setItem('echo_setup_complete','true');localStorage.setItem('echo_username',tempUsername);if(tempPassword!=='')localStorage.setItem('echo_password',tempPassword);
+    if(currentAccount){saveAccountData('setup_complete','true');saveAccountData('username',tempUsername);if(tempPassword)saveAccountData('password',tempPassword);}
+    document.getElementById('setup-screen').style.display='none';const lu=document.getElementById('lock-username');if(lu)lu.innerText=tempUsername;
+    initializeXboxDashboard();const wm=document.getElementById('welcome-modal');if(wm)wm.style.display='flex';
 };
 
-// Override finalizeSetup
-window.finalizeSetup = function() {
-    localStorage.setItem('echo_setup_complete', 'true');
-    localStorage.setItem('echo_username', tempUsername);
-    if (tempPassword !== '') localStorage.setItem('echo_password', tempPassword);
-
-    if (currentAccount) {
-        saveAccountData('setup_complete', 'true');
-        saveAccountData('username', tempUsername);
-        if (tempPassword) saveAccountData('password', tempPassword);
-    }
-
-    document.getElementById('setup-screen').style.display = 'none';
-    const lockUsername = document.getElementById('lock-username');
-    if (lockUsername) lockUsername.innerText = tempUsername;
-
-    initializeXboxDashboard();
-
-    const welcomeModal = document.getElementById('welcome-modal');
-    if (welcomeModal) welcomeModal.style.display = 'flex';
+window.lockSystem=function(){
+    const ap=currentAccount?getAccountData('password'):localStorage.getItem('echo_password');
+    if(ap){updateLockScreenForAccount();const ls=document.getElementById('lock-screen');if(ls)ls.style.display='flex';}
+    else{notificationMgr.showNotification({title:'No Password Set',message:'Please set a password in Settings first!',icon:'shield-alert'});}
+    const qs=document.getElementById('quick-settings');if(qs)qs.style.display='none';const cm=document.getElementById('context-menu');if(cm)cm.style.display='none';
+    const g=document.getElementById('xbox-guide');if(g)g.classList.remove('active');xboxGuideOpen=false;
 };
 
-// Override lockSystem
-window.lockSystem = function() {
-    const accountPassword = currentAccount ? getAccountData('password') : localStorage.getItem('echo_password');
-
-    if (accountPassword) {
-        updateLockScreenForAccount();
-        const lockScreen = document.getElementById('lock-screen');
-        if (lockScreen) lockScreen.style.display = 'flex';
-    } else {
-        notificationMgr.showNotification({
-            title: "No Password Set",
-            message: "Please set a password in Settings first!",
-            icon: "shield-alert"
-        });
-    }
-
-    const quickSettings = document.getElementById('quick-settings');
-    if (quickSettings) quickSettings.style.display = 'none';
-    const contextMenu = document.getElementById('context-menu');
-    if (contextMenu) contextMenu.style.display = 'none';
-
-    const guide = document.getElementById('xbox-guide');
-    if (guide) guide.classList.remove('active');
-    xboxGuideOpen = false;
-};
-
-// Override window.onload for Xbox boot
-window.onload = function() {
+// Xbox boot sequence
+window.onload=function(){
     initAccountDB();
-
-    const savedAccountEmail = localStorage.getItem('echo_current_account');
-    if (savedAccountEmail) {
-        currentAccount = getAccountByEmail(savedAccountEmail);
-    }
-
-    if(localStorage.getItem('echo_theme') === 'light') {
-        document.body.setAttribute('data-theme', 'light');
-        const themeText = document.getElementById('theme-text');
-        if (themeText) themeText.innerText = "Light Theme";
-    }
-
-    setTimeout(() => {
-        const boot = document.getElementById('boot-screen');
-        if(boot) {
-            boot.style.opacity = '0';
-            setTimeout(() => boot.style.display = 'none', 800);
-        }
-
-        const accounts = getAllAccounts();
-        const hasAccounts = Object.keys(accounts).length > 0;
-        const isSetupComplete = localStorage.getItem('echo_setup_complete');
-
-        if (currentAccount) {
-            showAccountLoadingScreen();
-        } else if (hasAccounts) {
+    const sae=localStorage.getItem('echo_current_account');if(sae){try{currentAccount=getAccountByEmail(sae);}catch(e){currentAccount=null;}}
+    if(localStorage.getItem('echo_theme')==='light'){document.body.setAttribute('data-theme','light');const tt=document.getElementById('theme-text');if(tt)tt.innerText='Light Theme';}
+    setTimeout(()=>{
+        try {
+            const b=document.getElementById('boot-screen');if(b){b.style.opacity='0';setTimeout(()=>b.style.display='none',800);}
+            const ac=getAllAccounts(),ha=Object.keys(ac).length>0,sc=localStorage.getItem('echo_setup_complete');
+            if(currentAccount)showAccountLoadingScreen();
+            else if(ha)showAccountModal();
+            else if(!sc)showAccountModal();
+            else{initializeXboxDashboard();if(localStorage.getItem('echo_password')){const lu=document.getElementById('lock-username');if(lu)lu.innerText=localStorage.getItem('echo_username')||'Player1';const ls=document.getElementById('lock-screen');if(ls)ls.style.display='flex';}else showCreatorScreen();}
+        } catch(e) {
+            console.error('Boot error:', e);
+            const b=document.getElementById('boot-screen');if(b){b.style.opacity='0';setTimeout(()=>b.style.display='none',800);}
             showAccountModal();
-        } else if (!isSetupComplete) {
-            showAccountModal();
-        } else {
-            initializeXboxDashboard();
-            if (localStorage.getItem('echo_password')) {
-                const lockUsername = document.getElementById('lock-username');
-                if (lockUsername) lockUsername.innerText = localStorage.getItem('echo_username') || 'Player1';
-                const lockScreen = document.getElementById('lock-screen');
-                if (lockScreen) lockScreen.style.display = 'flex';
-            } else {
-                showCreatorScreen();
-            }
         }
-    }, 3000);
+    },3000);
 };
 
-// Update Play Store references to Microsoft Store in JS
-// The store is already styled via CSS, but let's update some text
-const originalRenderPlayStoreStore = window.renderPlayStoreStore;
-if (originalRenderPlayStoreStore) {
-    // Keep existing functionality
-}
-
-console.log('Echo OS for Xbox - Loaded successfully');
+console.log('Echo OS for Xbox loaded');
