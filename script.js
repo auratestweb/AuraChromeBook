@@ -3913,16 +3913,55 @@ function switchXboxTab(tabName){
 
 function createXboxTile(appId,item,installed){
     const isGame=PS_GAMES[appId]!==undefined;
-    return '<div class="xbox-game-tile xbox-focusable" data-app-id="'+appId+'" tabindex="0" onclick="xboxLaunchApp(''+appId+'')"><div class="xbox-tile-image"><img src="'+item.banner+'" alt="'+item.name+'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="xbox-tile-icon" style="display:none;">'+item.icon+'</div>'+(installed?'<span class="xbox-tile-installed">INSTALLED</span>':'')+'</div><div class="xbox-tile-title">'+item.name+'</div><div class="xbox-tile-meta">'+(isGame?'🎮 Game':'📱 App')+' • ⭐'+item.rating+'</div></div>';
+    const tile=document.createElement('div');
+    tile.className='xbox-game-tile xbox-focusable';
+    tile.setAttribute('data-app-id',appId);
+    tile.setAttribute('tabindex','0');
+    tile.onclick=function(){xboxLaunchApp(appId);};
+
+    const imgDiv=document.createElement('div');
+    imgDiv.className='xbox-tile-image';
+
+    const img=document.createElement('img');
+    img.src=item.banner;
+    img.alt=item.name;
+    img.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex';};
+    imgDiv.appendChild(img);
+
+    const iconDiv=document.createElement('div');
+    iconDiv.className='xbox-tile-icon';
+    iconDiv.style.display='none';
+    iconDiv.textContent=item.icon;
+    imgDiv.appendChild(iconDiv);
+
+    if(installed){
+        const installedSpan=document.createElement('span');
+        installedSpan.className='xbox-tile-installed';
+        installedSpan.textContent='INSTALLED';
+        imgDiv.appendChild(installedSpan);
+    }
+    tile.appendChild(imgDiv);
+
+    const titleDiv=document.createElement('div');
+    titleDiv.className='xbox-tile-title';
+    titleDiv.textContent=item.name;
+    tile.appendChild(titleDiv);
+
+    const metaDiv=document.createElement('div');
+    metaDiv.className='xbox-tile-meta';
+    metaDiv.textContent=(isGame?'🎮 Game':'📱 App')+' • ⭐'+item.rating;
+    tile.appendChild(metaDiv);
+
+    return tile.outerHTML;
 }
 
 function renderXboxHome(c){
     const recent=getRecentPlays(),installed=JSON.parse(getAccountData('installed_apps')||localStorage.getItem('echo_installed_apps')||'[]');
-    let h='<div class="xbox-hero xbox-focusable" onclick="openApp('gtavice-window')" tabindex="0"><img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200" onerror="this.style.display='none'"><div class="xbox-hero-overlay"><h1 class="xbox-hero-title">GTA III: Vice City</h1><p class="xbox-hero-subtitle">Classic open-world crime adventure</p><button class="xbox-hero-btn xbox-focusable">▶ Play</button></div></div>';
+    let h="<div class='xbox-hero xbox-focusable' onclick=\"openApp('gtavice-window')\" tabindex='0'><img src='https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200' onerror=\"this.style.display='none'\"><div class='xbox-hero-overlay'><h1 class='xbox-hero-title'>GTA III: Vice City</h1><p class='xbox-hero-subtitle'>Classic open-world crime adventure</p><button class='xbox-hero-btn xbox-focusable'>▶ Play</button></div></div>";
     if(recent.length>0)h+='<div class="xbox-quick-resume"><div class="xbox-quick-resume-header"><span style="font-size:20px;">⚡</span><h3>Quick Resume</h3></div><div class="xbox-games-grid">'+recent.slice(0,5).map(id=>{const g=PS_GAMES[id];return g?createXboxTile(id,g,true):''}).join('')+'</div></div>';
-    if(recent.length>0)h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Recently Played</h3><span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span></div><div class="xbox-games-grid">'+recent.slice(0,8).map(id=>{const g=PS_GAMES[id];return g?createXboxTile(id,g,true):''}).join('')+'</div></div>';
-    if(installed.length>0)h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Installed Games</h3><span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span></div><div class="xbox-games-grid">'+installed.slice(0,8).map(a=>{const g=PS_GAMES[a.id];return g?createXboxTile(a.id,g,true):''}).join('')+'</div></div>';
-    h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">All Games</h3><span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span></div><div class="xbox-games-grid">'+Object.values(PS_GAMES).slice(0,12).map(g=>createXboxTile(g.id,g)).join('')+'</div></div>';
+    if(recent.length>0)h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Recently Played</h3><span class='xbox-row-see-all' onclick=\"switchXboxTab('mygames')\">See all ></span></div><div class="xbox-games-grid">'+recent.slice(0,8).map(id=>{const g=PS_GAMES[id];return g?createXboxTile(id,g,true):''}).join('')+'</div></div>';
+    if(installed.length>0)h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Installed Games</h3><span class='xbox-row-see-all' onclick=\"switchXboxTab('mygames')\">See all ></span></div><div class="xbox-games-grid">'+installed.slice(0,8).map(a=>{const g=PS_GAMES[a.id];return g?createXboxTile(a.id,g,true):''}).join('')+'</div></div>';
+    h+='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">All Games</h3><span class='xbox-row-see-all' onclick=\"switchXboxTab('mygames')\">See all ></span></div><div class="xbox-games-grid">'+Object.values(PS_GAMES).slice(0,12).map(g=>createXboxTile(g.id,g)).join('')+'</div></div>';
     c.innerHTML=h;
 }
 
@@ -3932,13 +3971,14 @@ function renderXboxMyGames(c){
     PRE_INSTALLED_APPS.forEach(id=>{const g=PS_GAMES[id],a=PS_APPS[id],i=g||a;if(i)h+=createXboxTile(id,i,true);});
     installed.forEach(a=>{const g=PS_GAMES[a.id];if(g)h+=createXboxTile(a.id,g,true);});
     Object.values(PS_GAMES).forEach(g=>{const is=installed.find(a=>a.id===g.id)||PRE_INSTALLED_APPS.includes(g.id);if(!is)h+=createXboxTile(g.id,g,false);});
-    h+='</div></div>';c.innerHTML=h;
+    h+="</div></div>";c.innerHTML=h;
 }
 
 function renderXboxApps(c){
-    let h='<div class="xbox-game-row"><div class="xbox-row-header"><h3 class="xbox-row-title">Apps</h3></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;padding:10px 0;">';
+    let h="<div class='xbox-game-row'><div class='xbox-row-header'><h3 class='xbox-row-title'>Apps</h3></div><div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;padding:10px 0;'>";
     Object.values(PS_APPS).forEach(a=>h+=createXboxTile(a.id,a,true));
-    h+='</div></div>';c.innerHTML=h;
+    h+="</div></div>";
+    c.innerHTML=h;
 }
 
 function xboxLaunchApp(appId){openApp(appId);if(PS_GAMES[appId])trackGameOpen(appId);}
