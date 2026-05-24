@@ -26,6 +26,22 @@
         </div>
         <div class="boot-loader-xbox"></div>
         <div class="boot-text-xbox">Echo OS for Xbox</div>
+    <button id="boot-bypass-btn" onclick="forceBootContinue()" style="margin-top:30px;padding:10px 20px;background:rgba(155,240,11,0.2);border:1px solid #9bf00b;color:#9bf00b;border-radius:8px;cursor:pointer;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:0;transition:opacity 2s;pointer-events:none;">Press to Continue</button>
+    <script>
+        setTimeout(function(){
+            var btn = document.getElementById('boot-bypass-btn');
+            if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+        },5000);
+        function forceBootContinue(){
+            var b=document.getElementById('boot-screen');
+            if(b){b.style.opacity='0';setTimeout(function(){b.style.display='none';},800);}
+            try{initAccountDB();}catch(e){}
+            var ac=getAllAccounts(),ha=Object.keys(ac).length>0,sc=localStorage.getItem('echo_setup_complete');
+            if(ha)showAccountModal();
+            else if(!sc)showAccountModal();
+            else{initializeXboxDashboard();if(localStorage.getItem('echo_password')){var ls=document.getElementById('lock-screen');if(ls)ls.style.display='flex';}else showCreatorScreen();}
+        }
+    </script>
     </div>
 
     <!-- Account Loading Screen -->
@@ -250,74 +266,7 @@
 
     <div id="desktop">
         <!-- Xbox Dashboard Home Screen -->
-        <div id="xbox-dashboard">
-            <div class="xbox-top-bar">
-                <div class="xbox-logo-small">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#9bf00b" stroke-width="2" style="width:24px;height:24px;">
-                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 4"/><circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    Echo OS
-                </div>
-                <div class="xbox-user-info">
-                    <span id="xbox-gamertag-display" class="xbox-gamertag">Player1</span>
-                    <div class="xbox-avatar-small" id="xbox-avatar">🎮</div>
-                </div>
-            </div>
-
-            <div class="xbox-nav-tabs">
-                <button class="xbox-nav-tab active" onclick="switchXboxTab('home')" data-tab="home">Home</button>
-                <button class="xbox-nav-tab" onclick="switchXboxTab('mygames')" data-tab="mygames">My Games</button>
-                <button class="xbox-nav-tab" onclick="switchXboxTab('store')" data-tab="store">Microsoft Store</button>
-                <button class="xbox-nav-tab" onclick="switchXboxTab('apps')" data-tab="apps">Apps</button>
-                <button class="xbox-nav-tab" onclick="switchXboxTab('settings')" data-tab="settings">Settings</button>
-            </div>
-
-            <div class="xbox-content" id="xbox-content-area">
-                <!-- Featured Hero -->
-                <div class="xbox-hero" onclick="openApp('gtavice-window')">
-                    <img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200" alt="Featured" onerror="this.style.display='none'">
-                    <div class="xbox-hero-overlay">
-                        <h1 class="xbox-hero-title">GTA III: Vice City</h1>
-                        <p class="xbox-hero-subtitle">Classic open-world crime adventure</p>
-                        <button class="xbox-hero-btn">▶ Play</button>
-                    </div>
-                </div>
-
-                <!-- Quick Resume -->
-                <div class="xbox-quick-resume" id="xbox-quick-resume" style="display:none;">
-                    <div class="xbox-quick-resume-header">
-                        <span style="font-size:20px;">⚡</span>
-                        <h3>Quick Resume</h3>
-                    </div>
-                    <div class="xbox-games-grid" id="xbox-quick-resume-grid"></div>
-                </div>
-
-                <!-- Game Rows -->
-                <div class="xbox-game-row">
-                    <div class="xbox-row-header">
-                        <h3 class="xbox-row-title">Recently Played</h3>
-                        <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
-                    </div>
-                    <div class="xbox-games-grid" id="xbox-recent-games"></div>
-                </div>
-
-                <div class="xbox-game-row">
-                    <div class="xbox-row-header">
-                        <h3 class="xbox-row-title">Installed Games</h3>
-                        <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
-                    </div>
-                    <div class="xbox-games-grid" id="xbox-installed-games"></div>
-                </div>
-
-                <div class="xbox-game-row">
-                    <div class="xbox-row-header">
-                        <h3 class="xbox-row-title">All Games</h3>
-                        <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
-                    </div>
-                    <div class="xbox-games-grid" id="xbox-all-games"></div>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Xbox Guide Overlay -->
         <div id="xbox-guide">
@@ -757,6 +706,8 @@
                 <iframe data-src="Apps/EchoChat.html" src="" width="100%" height="100%" frameborder="0" allow="fullscreen; pointer-lock; keyboard-map;"></iframe>
             </div>
         </div>
+    
+    
 
     <div id="notification-toast-container"></div>
 
@@ -868,6 +819,75 @@
     </div>
 
         </div>
+    <div id="xbox-dashboard">
+            <div class="xbox-top-bar">
+                <div class="xbox-logo-small">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#9bf00b" stroke-width="2" style="width:24px;height:24px;">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 4"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Echo OS
+                </div>
+                <div class="xbox-user-info">
+                    <span id="xbox-gamertag-display" class="xbox-gamertag">Player1</span>
+                    <div class="xbox-avatar-small" id="xbox-avatar">🎮</div>
+                </div>
+            </div>
+
+            <div class="xbox-nav-tabs">
+                <button class="xbox-nav-tab active" onclick="switchXboxTab('home')" data-tab="home">Home</button>
+                <button class="xbox-nav-tab" onclick="switchXboxTab('mygames')" data-tab="mygames">My Games</button>
+                <button class="xbox-nav-tab" onclick="switchXboxTab('store')" data-tab="store">Microsoft Store</button>
+                <button class="xbox-nav-tab" onclick="switchXboxTab('apps')" data-tab="apps">Apps</button>
+                <button class="xbox-nav-tab" onclick="switchXboxTab('settings')" data-tab="settings">Settings</button>
+            </div>
+
+            <div class="xbox-content" id="xbox-content-area">
+                <!-- Featured Hero -->
+                <div class="xbox-hero" onclick="openApp('gtavice-window')">
+                    <img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200" alt="Featured" onerror="this.style.display='none'">
+                    <div class="xbox-hero-overlay">
+                        <h1 class="xbox-hero-title">GTA III: Vice City</h1>
+                        <p class="xbox-hero-subtitle">Classic open-world crime adventure</p>
+                        <button class="xbox-hero-btn">▶ Play</button>
+                    </div>
+                </div>
+
+                <!-- Quick Resume -->
+                <div class="xbox-quick-resume" id="xbox-quick-resume" style="display:none;">
+                    <div class="xbox-quick-resume-header">
+                        <span style="font-size:20px;">⚡</span>
+                        <h3>Quick Resume</h3>
+                    </div>
+                    <div class="xbox-games-grid" id="xbox-quick-resume-grid"></div>
+                </div>
+
+                <!-- Game Rows -->
+                <div class="xbox-game-row">
+                    <div class="xbox-row-header">
+                        <h3 class="xbox-row-title">Recently Played</h3>
+                        <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
+                    </div>
+                    <div class="xbox-games-grid" id="xbox-recent-games"></div>
+                </div>
+
+                <div class="xbox-game-row">
+                    <div class="xbox-row-header">
+                        <h3 class="xbox-row-title">Installed Games</h3>
+                        <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
+                    </div>
+                    <div class="xbox-games-grid" id="xbox-installed-games"></div>
+                </div>
+
+                <div class="xbox-game-row">
+                    <div class="xbox-row-header">
+                        <h3 class="xbox-row-title">All Games</h3>
+                        <span class="xbox-row-see-all" onclick="switchXboxTab('mygames')">See all ></span>
+                    </div>
+                    <div class="xbox-games-grid" id="xbox-all-games"></div>
+                </div>
+            </div>
+        </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
