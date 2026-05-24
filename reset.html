@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Echo OS - Reset Data</title>
+    <style>
+        body { background: #000; color: #9bf00b; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { text-align: center; padding: 40px; border: 1px solid #9bf00b; border-radius: 16px; max-width: 400px; }
+        h1 { margin: 0 0 20px; }
+        p { color: rgba(255,255,255,0.6); margin: 0 0 30px; line-height: 1.5; }
+        button { background: linear-gradient(135deg, #107C10, #9bf00b); color: #000; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin: 5px; }
+        button.secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .status { margin-top: 20px; font-size: 14px; color: rgba(255,255,255,0.5); }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="box">
+        <h1>🎮 Echo OS Recovery</h1>
+        <p>Your Echo OS data may be corrupted, causing the loading screen to freeze. You can reset your data to fix this issue.</p>
+        <button onclick="resetData()">🗑️ Reset All Data</button>
+        <button class="secondary" onclick="goBack()">⬅️ Go Back to Echo OS</button>
+        <div class="status" id="status"></div>
+    </div>
+    <script>
+        function resetData() {
+            if(confirm('WARNING: This will delete ALL your Echo OS data including accounts, files, apps, and settings. Continue?')) {
+                localStorage.clear();
+                document.getElementById('status').innerHTML = '✅ All data cleared! Redirecting...';
+                setTimeout(function() { window.location.href = 'index.html'; }, 1500);
+            }
+        }
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
