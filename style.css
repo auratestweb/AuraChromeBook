@@ -446,7 +446,15 @@
 }
 
 body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif; overflow: hidden; background-color: #000; color: var(--sys-text); }
-#desktop { height: 100vh; position: relative; background-image: url('https://images.unsplash.com/photo-1506744626753-1fa44df31c22?q=80&w=2000&auto=format&fit=crop'); background-size: cover; background-position: center; transition: filter 0.2s, background-image 0.3s; }
+#desktop { 
+    height: 100vh; 
+    position: relative; 
+    background-color: #0a0a0a;
+    background-image: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%), url('https://images.unsplash.com/photo-1506744626753-1fa44df31c22?q=80&w=2000&auto=format&fit=crop'); 
+    background-size: cover; 
+    background-position: center; 
+    transition: filter 0.2s, background-image 0.3s; 
+}
 
 /* Boot Screen */
 #boot-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #202124; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: opacity 0.5s ease-out; }
@@ -2154,7 +2162,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%);
-    z-index: 1;
+    z-index: 100;
     display: none;
     flex-direction: column;
     overflow: hidden;
@@ -2257,6 +2265,8 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', 'S
     flex: 1;
     overflow-y: auto;
     padding: 0 30px 30px;
+    position: relative;
+    z-index: 2;
 }
 
 /* Xbox Featured Game (Hero) */
@@ -4246,4 +4256,22 @@ body[data-theme="dark"] {
 
 .xbox-nav-hint.visible {
     opacity: 1;
+}
+
+
+/* ===== BOOT SCREEN OVERRIDE ===== */
+#boot-screen {
+    background: #000 !important;
+}
+
+
+/* BOOT SCREEN BACKGROUND FIX */
+#boot-screen { background-color: #000 !important; }
+
+/* Hide desktop elements when Xbox dashboard is active */
+#desktop:has(#xbox-dashboard.active) #desktop-icons-container,
+#desktop:has(#xbox-dashboard.active) #context-menu,
+#desktop:has(#xbox-dashboard.active) #launcher-context-menu,
+#desktop:has(#xbox-dashboard.active) #snap-preview {
+    display: none !important;
 }
