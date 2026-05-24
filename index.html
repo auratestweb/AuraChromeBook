@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Echo OS</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <link id="page-favicon" rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
     <base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
+
+
+
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 <base target="_blank">
 </head>
 <body data-theme="dark">
@@ -26,22 +29,6 @@
         </div>
         <div class="boot-loader-xbox"></div>
         <div class="boot-text-xbox">Echo OS for Xbox</div>
-    <button id="boot-bypass-btn" onclick="forceBootContinue()" style="margin-top:30px;padding:10px 20px;background:rgba(155,240,11,0.2);border:1px solid #9bf00b;color:#9bf00b;border-radius:8px;cursor:pointer;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:0;transition:opacity 2s;pointer-events:none;">Press to Continue</button>
-    <script>
-        setTimeout(function(){
-            var btn = document.getElementById('boot-bypass-btn');
-            if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
-        },5000);
-        function forceBootContinue(){
-            var b=document.getElementById('boot-screen');
-            if(b){b.style.opacity='0';setTimeout(function(){b.style.display='none';},800);}
-            try{initAccountDB();}catch(e){}
-            var ac=getAllAccounts(),ha=Object.keys(ac).length>0,sc=localStorage.getItem('echo_setup_complete');
-            if(ha)showAccountModal();
-            else if(!sc)showAccountModal();
-            else{initializeXboxDashboard();if(localStorage.getItem('echo_password')){var ls=document.getElementById('lock-screen');if(ls)ls.style.display='flex';}else showCreatorScreen();}
-        }
-    </script>
     </div>
 
     <!-- Account Loading Screen -->
@@ -888,6 +875,6 @@
             </div>
         </div>
     
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>
