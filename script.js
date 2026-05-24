@@ -2,16 +2,6 @@
 // All user data is stored in localStorage with account-specific prefixes
 
 const ECHO_DOMAIN = '@echoos.com';
-// ===== SAFE LOCALSTORAGE HELPERS =====
-function safeJSONParse(key, defaultValue) {
-    try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : defaultValue; }
-    catch (e) { console.warn('Corrupted data for', key); return defaultValue; }
-}
-function safeJSONParseRaw(data, defaultValue) {
-    try { return data ? JSON.parse(data) : defaultValue; }
-    catch (e) { console.warn('JSON parse error'); return defaultValue; }
-}
-
 let currentAccount = null; // { email, username, name, password }
 
 // Initialize account database
@@ -23,7 +13,8 @@ function initAccountDB() {
 
 // Get all accounts from database
 function getAllAccounts() {
-    return safeJSONParse('echo_accounts_db', {});
+    const db = localStorage.getItem('echo_accounts_db');
+    return db ? JSON.parse(db) : {};
 }
 
 // Save account to database
@@ -465,9 +456,9 @@ function bringToFront(elmnt) {
 let activeGameWindow = null;
 
 // Override bringToFront to also track active window and focus iframe properly
-const originalBringToFront = bringToFront;
+window._originalBringToFront = bringToFront;
 bringToFront = function(elmnt) {
-    originalBringToFront ? originalBringToFront(elmnt) : undefined;
+    window._originalBringToFront ? window._originalBringToFront(elmnt) : undefined;
     activeGameWindow = elmnt.id;
 
     // Focus the iframe content window for keyboard capture
@@ -918,7 +909,7 @@ function saveAppToStorage(appId, iconSymbol, appName) {
     }
 }
 
-const originalFinalizeSetup = window.finalizeSetup;
+window._originalFinalizeSetup = window.finalizeSetup;
 window.finalizeSetup = function() {
     localStorage.setItem('echo_setup_complete', 'true');
     localStorage.setItem('echo_username', tempUsername);
@@ -941,7 +932,7 @@ window.finalizeSetup = function() {
 };
 
 // Override unlock to check account password
-const originalUnlockOS = window.unlockOS;
+window._originalUnlockOS = window.unlockOS;
 window.unlockOS = function() {
     const input = document.getElementById('lock-password').value;
     const lockError = document.getElementById('lock-error');
@@ -968,7 +959,7 @@ window.unlockOS = function() {
 };
 
 // Override saveSecuritySettings to save to account
-const originalSaveSecuritySettings = window.saveSecuritySettings;
+window._originalSaveSecuritySettings = window.saveSecuritySettings;
 window.saveSecuritySettings = function() {
     const pass = document.getElementById('set-password').value;
     const q = document.getElementById('set-question').value;
@@ -995,7 +986,7 @@ window.saveSecuritySettings = function() {
 };
 
 // Override factoryReset to be account-aware
-const originalFactoryReset = window.factoryReset;
+window._originalFactoryReset = window.factoryReset;
 window.factoryReset = function() {
     if (confirm("WARNING: This will erase ALL data including all accounts. Continue?")) {
         localStorage.clear();
@@ -1004,7 +995,7 @@ window.factoryReset = function() {
 };
 
 // Override lockSystem to show account info
-const originalLockSystem = window.lockSystem;
+window._originalLockSystem = window.lockSystem;
 window.lockSystem = function() {
     const accountPassword = currentAccount ? getAccountData('password') : localStorage.getItem('echo_password');
 
@@ -1023,7 +1014,7 @@ window.lockSystem = function() {
 };
 
 // Override initializeDesktop to load account data
-const originalInitializeDesktop = window.initializeDesktop;
+window._originalInitializeDesktop = window.initializeDesktop;
 window.initializeDesktop = function() {
     updateCalendarWidget();
     initChromeProxy();
@@ -1072,7 +1063,7 @@ window.initializeDesktop = function() {
 };
 
 // Override setWallpaper to save to account
-const originalSetWallpaper = window.setWallpaper;
+window._originalSetWallpaper = window.setWallpaper;
 window.setWallpaper = function(url) {
     let highResUrl = url.replace("w=400", "w=2000");
     const desktop = document.getElementById('desktop');
@@ -1082,7 +1073,7 @@ window.setWallpaper = function(url) {
 };
 
 // Override saveAppToStorage to save to account
-const originalSaveAppToStorage = window.saveAppToStorage;
+window._originalSaveAppToStorage = window.saveAppToStorage;
 window.saveAppToStorage = function(appId, iconSymbol, appName) {
     let savedApps = JSON.parse(getAccountData('installed_apps') || localStorage.getItem('echo_installed_apps') || '[]');
     if (!savedApps.find(app => app.id === appId)) {
@@ -1098,7 +1089,7 @@ window.saveAppToStorage = function(appId, iconSymbol, appName) {
 };
 
 // Override notepadSave to save to account
-const originalNotepadSave = window.notepadSave;
+window._originalNotepadSave = window.notepadSave;
 window.notepadSave = function() {
     if(!currentNotepadFile) { notepadSaveAs(); return; }
     let content = document.getElementById('wordpad-editor').innerHTML;
@@ -1111,7 +1102,7 @@ window.notepadSave = function() {
 };
 
 // Override renderFiles to load from account
-const originalRenderFiles = window.renderFiles;
+window._originalRenderFiles = window.renderFiles;
 window.renderFiles = function() {
     const grid = document.getElementById('file-explorer-grid');
     if(!grid) return;
@@ -1123,7 +1114,7 @@ window.renderFiles = function() {
 };
 
 // Override openFileFromExplorer to load from account
-const originalOpenFileFromExplorer = window.openFileFromExplorer;
+window._originalOpenFileFromExplorer = window.openFileFromExplorer;
 window.openFileFromExplorer = function(name) {
     let files = JSON.parse(getAccountData('files') || localStorage.getItem('echo_files') || '{}');
     document.getElementById('wordpad-editor').innerHTML = files[name];
@@ -1132,7 +1123,7 @@ window.openFileFromExplorer = function(name) {
 };
 
 // Override saveBatteryLogToFile to save to account
-const originalSaveBatteryLogToFile = window.saveBatteryLogToFile;
+window._originalSaveBatteryLogToFile = window.saveBatteryLogToFile;
 window.saveBatteryLogToFile = function() {
     const batteryLog = localStorage.getItem('echo_battery_log') || '';
     let files = JSON.parse(getAccountData('files') || localStorage.getItem('echo_files') || '{}');
@@ -1142,7 +1133,7 @@ window.saveBatteryLogToFile = function() {
 };
 
 // Override wallpaper upload handler
-const originalWallpaperUploadHandler = null;
+window._originalWallpaperUploadHandler = null;
 document.addEventListener('DOMContentLoaded', function() {
     const wallpaperUpload = document.getElementById('wallpaper-upload');
     if (wallpaperUpload) {
@@ -1732,9 +1723,9 @@ function saveFavorites(data) {
 }
 
 // Track when a game is opened
-const originalOpenAppForPS = openApp;
+window._originalOpenAppForPS = openApp;
 openApp = function(appId) {
-    const result = originalOpenAppForPS ? originalOpenAppForPS(appId) : undefined;
+    const result = window._originalOpenAppForPS ? window._originalOpenAppForPS(appId) : undefined;
 
     // Track play time
     if (PS_GAMES[appId]) {
@@ -2240,9 +2231,9 @@ function clearPlayStoreData() {
 
 
 // Also init apps panel when store opens
-const originalOpenAppPS_v2 = openApp;
+window._originalOpenAppPS_v2 = openApp;
 openApp = function(appId) {
-    const result = originalOpenAppPS_v2 ? originalOpenAppPS_v2(appId) : undefined;
+    const result = window._originalOpenAppPS_v2 ? window._originalOpenAppPS_v2(appId) : undefined;
     if (appId === 'store-window') {
         setTimeout(() => {
             renderPlayStoreApps();
@@ -2250,9 +2241,9 @@ openApp = function(appId) {
     }
     return result;
 };
-const originalOpenAppPS = openApp;
+window._originalOpenAppPS = openApp;
 openApp = function(appId) {
-    const result = originalOpenAppPS ? originalOpenAppPS(appId) : undefined;
+    const result = window._originalOpenAppPS ? window._originalOpenAppPS(appId) : undefined;
 
     if (appId === 'store-window') {
         setTimeout(() => {
@@ -2434,7 +2425,7 @@ function installPlayStoreItem(appId, icon, name, type) {
 }
 
 // Override renderPlayStoreStore to make cards clickable for detail
-const originalRenderPlayStoreStore = renderPlayStoreStore;
+window._originalRenderPlayStoreStore = renderPlayStoreStore;
 renderPlayStoreStore = function() {
     const grid = document.getElementById('ps-store-grid');
     if (!grid) return;
@@ -2483,7 +2474,7 @@ renderPlayStoreStore = function() {
 };
 
 // Override renderPlayStoreHome to make recent games clickable
-const originalRenderPlayStoreHome = renderPlayStoreHome;
+window._originalRenderPlayStoreHome = renderPlayStoreHome;
 renderPlayStoreHome = function() {
     const recent = getRecentPlays();
     const emptyDiv = document.getElementById('ps-home-empty');
@@ -2519,7 +2510,7 @@ renderPlayStoreHome = function() {
 };
 
 // Override renderPlayStoreLibrary to make cards clickable
-const originalRenderPlayStoreLibrary = renderPlayStoreLibrary;
+window._originalRenderPlayStoreLibrary = renderPlayStoreLibrary;
 renderPlayStoreLibrary = function() {
     const grid = document.getElementById('ps-library-grid');
     const empty = document.getElementById('ps-library-empty');
@@ -2633,7 +2624,7 @@ function showCreatorScreen() {
 }
 
 // ===== ECHO OS UPDATE MODAL =====
-const originalShowUpdateModal = showUpdateModal;
+window._originalShowUpdateModal = showUpdateModal;
 showUpdateModal = function() {
     const modal = document.getElementById('update-modal');
     if (!modal) return;
@@ -3063,7 +3054,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Track window openings for desk management
-const originalOpenApp = openApp;
+window._originalOpenApp = openApp;
 openApp = function(appId) {
     const win = document.getElementById(appId);
     if (win) {
@@ -3075,7 +3066,7 @@ openApp = function(appId) {
             deskWindows[currentDesk].push(appId);
         }
     }
-    return originalOpenApp ? originalOpenApp(appId) : undefined;
+    return window._originalOpenApp ? window._originalOpenApp(appId) : undefined;
 };
 
 
@@ -3145,23 +3136,23 @@ function restoreActiveApps() {
 }
 
 // Track active apps when window state changes
-const originalOpenAppTrack = openApp;
+window._originalOpenAppTrack = openApp;
 openApp = function(appId) {
-    const result = originalOpenAppTrack ? originalOpenAppTrack(appId) : undefined;
+    const result = window._originalOpenAppTrack ? window._originalOpenAppTrack(appId) : undefined;
     trackActiveApps();
     return result;
 };
 
-const originalCloseAppTrack = closeApp;
+window._originalCloseAppTrack = closeApp;
 closeApp = function(appId) {
-    const result = originalCloseAppTrack ? originalCloseAppTrack(appId) : undefined;
+    const result = window._originalCloseAppTrack ? window._originalCloseAppTrack(appId) : undefined;
     trackActiveApps();
     return result;
 };
 
-const originalMinimizeAppTrack = minimizeApp;
+window._originalMinimizeAppTrack = minimizeApp;
 minimizeApp = function(appId) {
-    const result = originalMinimizeAppTrack ? originalMinimizeAppTrack(appId) : undefined;
+    const result = window._originalMinimizeAppTrack ? window._originalMinimizeAppTrack(appId) : undefined;
     trackActiveApps();
     return result;
 };
@@ -4049,21 +4040,15 @@ window.lockSystem=function(){
 // Xbox boot sequence
 window.onload=function(){
     initAccountDB();
-    const sae=localStorage.getItem('echo_current_account');if(sae){try{currentAccount=getAccountByEmail(sae);}catch(e){currentAccount=null;}}
+    const sae=localStorage.getItem('echo_current_account');if(sae)currentAccount=getAccountByEmail(sae);
     if(localStorage.getItem('echo_theme')==='light'){document.body.setAttribute('data-theme','light');const tt=document.getElementById('theme-text');if(tt)tt.innerText='Light Theme';}
     setTimeout(()=>{
-        try {
-            const b=document.getElementById('boot-screen');if(b){b.style.opacity='0';setTimeout(()=>b.style.display='none',800);}
-            const ac=getAllAccounts(),ha=Object.keys(ac).length>0,sc=localStorage.getItem('echo_setup_complete');
-            if(currentAccount)showAccountLoadingScreen();
-            else if(ha)showAccountModal();
-            else if(!sc)showAccountModal();
-            else{initializeXboxDashboard();if(localStorage.getItem('echo_password')){const lu=document.getElementById('lock-username');if(lu)lu.innerText=localStorage.getItem('echo_username')||'Player1';const ls=document.getElementById('lock-screen');if(ls)ls.style.display='flex';}else showCreatorScreen();}
-        } catch(e) {
-            console.error('Boot error:', e);
-            const b=document.getElementById('boot-screen');if(b){b.style.opacity='0';setTimeout(()=>b.style.display='none',800);}
-            showAccountModal();
-        }
+        const b=document.getElementById('boot-screen');if(b){b.style.opacity='0';setTimeout(()=>b.style.display='none',800);}
+        const ac=getAllAccounts(),ha=Object.keys(ac).length>0,sc=localStorage.getItem('echo_setup_complete');
+        if(currentAccount)showAccountLoadingScreen();
+        else if(ha)showAccountModal();
+        else if(!sc)showAccountModal();
+        else{initializeXboxDashboard();if(localStorage.getItem('echo_password')){const lu=document.getElementById('lock-username');if(lu)lu.innerText=localStorage.getItem('echo_username')||'Player1';const ls=document.getElementById('lock-screen');if(ls)ls.style.display='flex';}else showCreatorScreen();}
     },3000);
 };
 
